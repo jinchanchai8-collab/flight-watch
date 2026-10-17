@@ -1,14 +1,14 @@
 # ✈️ 台灣出發 直飛低價 / 錯價機票監控 → LINE 推播
 
-每天早上 08:07（台灣時間）自動：
+**每日日報**（早上 08:07）＋ **錯價快報**（12:07、16:07、20:07、00:07 檢查，只有發現新的 🚨 才推播）
 
-1. 從 **Travelpayouts / Aviasales API** 抓台北(TPE)、高雄(KHH)、台中(RMQ) 出發、未來 6 個月的**直飛**最低價
-2. 從 **Secret Flying、Fly4free** 錯價情報 RSS 篩出台灣出發的特價／錯價
-3. 依門檻 + 歷史價判斷，挑出：
-   - 🚨 **疑似錯價**：低於區域 `error_price`，或低於歷史中位數的 50%
-   - 🔥 **低價**：低於區域 `max_price`
-   - 📉 **比平常便宜**：低於歷史中位數的 80%
-4. 整理成一則訊息推到你的 LINE（附 Skyscanner 直飛搜尋連結，方便比價下單）
+1. 從 **Travelpayouts / Aviasales API** 抓台北、高雄、台中出發，未來 6 個月的**直飛**票價
+2. **篩選**：至少 7 天後出發；旅行天數依地區（日韓港澳東南亞 5–15 天、關島帛琉 4–10 天、歐美 10–30 天、杜拜 7–21 天、澳紐 8–21 天）
+3. **每條航線跟自己同月份比**，算出便宜幾 %（不會只推亞洲、淡季不誤判）
+4. **前 10 名、分散國家**：每國最多 2 筆、每區最多 4 筆、保留 2 個長程名額，錯價一律優先
+5. 標示：🚨疑似錯價／🔥大降價（≥30%）／📉比平常便宜（≥15%）、⚠️樣本少、🧳廉航（附加 20kg 行李概估價）、🇹🇼台灣連假與需請假天數、🎌當地節日
+6. **自我檢討**：疑似錯價 1～2 天內消失＝真錯價（該航線門檻調低）；3 天後還在＝淡季/常態促銷（門檻調高）
+7. 另掃 **Secret Flying** 錯價情報
 
 完全免費：GitHub Actions 免費排程、Travelpayouts 免費 API、LINE 官方帳號免費方案（每天 1 則，一個月約 30 則，遠低於免費額度）。
 
@@ -17,18 +17,18 @@
 ## 設定步驟（約 20 分鐘）
 
 ### 1. 申請 Travelpayouts API Token
-1. 到 https://www.travelpayouts.com 註冊（免費）
-2. 加入 **Aviasales** 計畫
-3. 在 Profile → **API token** 複製 token
+1. 到 https://www.travelpayouts.com 註冊（免費，可用 Google 帳號）
+2. 登入後台後，在 Programs（計畫）找到 **Aviasales** → Join
+3. 後台右上角頭像 → **Profile** → **API token** 區塊，複製那串英數字
 
 ### 2. 建立 LINE 推播機器人（LINE Notify 已於 2025/3 停止服務，改用 Messaging API）
-1. 到 https://developers.line.biz/console/ 用你的 LINE 帳號登入
-2. 建立 Provider → 建立 **Messaging API** channel（會同時建一個 LINE 官方帳號）
-3. **Basic settings** 頁最下方找到 **Your user ID**（U 開頭），複製
-4. **Messaging API** 頁：
-   - 用手機掃 QR code **把機器人加為好友**（沒加好友收不到）
-   - 最下方 **Channel access token (long-lived)** → Issue → 複製
-5. 建議到 LINE Official Account Manager 把「自動回應訊息」關掉，避免它亂回話
+1. 到 https://manager.line.biz 用你的 LINE 帳號登入 → **建立 LINE 官方帳號**（免費方案，名稱隨意，例如「機票雷達」）
+2. 進入該官方帳號 → 右上 **設定** → 左側 **Messaging API** → **啟用 Messaging API** → 建立／選擇一個 Provider
+3. 同頁 **回應設定**：關掉「自動回應訊息」，避免它亂回話
+4. 到 https://developers.line.biz/console → 點剛剛的 Provider → 點那個 channel：
+   - **Basic settings** 分頁最下方 **Your user ID**（U 開頭一長串）→ 複製
+   - **Messaging API** 分頁：用手機掃 QR code **把官方帳號加為好友**（沒加收不到）
+   - 同分頁最下方 **Channel access token (long-lived)** → **Issue** → 複製
 
 ### 3. 放上 GitHub
 1. 在 GitHub 建立一個 **Private** repository
@@ -52,12 +52,20 @@
 | `origins` | 出發機場，預設 TPE / KHH / RMQ |
 | `months_ahead` | 往後監控幾個月 |
 | `one_way` | `false` = 來回票價，`true` = 單程 |
-| `regions.*.cities` | 各區域要監控的城市代碼（只放有直飛的） |
-| `regions.*.max_price` | 低於此價 → 🔥低價（新台幣） |
-| `regions.*.error_price` | 低於此價 → 🚨疑似錯價 |
-| `history_rules` | 累積 5 天以上歷史後，依中位數比例判斷 |
-| `send_when_nothing_found` | 沒好票也要傳日報（確認程式還活著） |
+| `regions.*.cities` | 要監控的城市代碼（只放有直飛的） |
+| `ranking.top_n` | 每天推幾筆（預設 10） |
+| `ranking.min_drop` | 至少比平常便宜多少才列入（預設 15%） |
+| `ranking.min_samples` | 計算基準價最少需要幾筆資料 |
+| `learning.default_error_cut` | 新航線的錯價門檻（預設 45%） |
+| `learning.min_cut` / `max_cut` | 自我學習時門檻的上下限 |
+| `learning.confirm_days` / `persist_days` | 幾天內消失算真錯價／幾天後還在算常態低價 |
 | `dedupe_days` | 同一張票幾天內不重複推播 |
+| `min_days_ahead` | 至少幾天後出發（預設 7） |
+| `regions.*.trip_days` | 各地區旅行天數 [最短, 最長] |
+| `diversity` | 每國／每區上限、長程保留名額 |
+| `lcc.airlines` | 廉航代碼與單程 20kg 行李概估價 |
+
+台灣連假與國外節日在 `holidays.json`，**每年底請更新下一年度**（人事行政總處通常 6 月公布）。
 
 想改推播時間：改 `daily.yml` 的 cron（UTC 時間，台灣 = UTC+8）。
 
