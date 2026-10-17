@@ -24,6 +24,7 @@ import os
 import re
 import statistics
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -266,7 +267,13 @@ def build_message(deals, alerts, errors):
         lines.append("今天沒有符合條件的低價直飛票。")
     if errors:
         lines.append("")
-        lines.append(f"⚠️ {len(errors)} 個資料來源抓取失敗（詳見 GitHub Actions log）")
+        lines.append(f"⚠️ {len(errors)} 個資料來源抓取失敗")
+        reasons = {}
+        for e in errors:
+            r = e.split(": ", 1)[-1][:60]
+            reasons[r] = reasons.get(r, 0) + 1
+        for r, n in list(reasons.items())[:3]:
+            lines.append(f"・{r}（{n} 次）")
     lines.append("")
     lines.append("※ 價格來自快取，下單前請點連結確認")
     return "\n".join(lines).strip()
@@ -285,25 +292,38 @@ def chunk_text(text, size=4800, max_parts=5):
 
 
 def send_line(text):
-    token = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
+    token = "".join((os.environ.get("LINE_CHANNEL_ACCESS_TOKEN") or "").split())
     if not token:
         raise SystemExit("缺少 LINE_CHANNEL_ACCESS_TOKEN")
-    user_id = os.environ.get("LINE_USER_ID")
+    user_id = "".join((os.environ.get("LINE_USER_ID") or "").split())
+    # 診斷資訊（不印出金鑰本身）
+    print(f"[LINE 檢查] access token 長度 {len(token)}（正常約 170 以上；32 左右代表貼成 Channel secret）")
+    if user_id:
+        ok = user_id.startswith("U") and len(user_id) == 33
+        print(f"[LINE 檢查] user ID 長度 {len(user_id)}、開頭 {user_id[:1]}（正常為 U 開頭、33 碼）{'✅' if ok else '❌'}")
     messages = [{"type": "text", "text": p} for p in chunk_text(text)]
     if user_id:
         url, body = "https://api.line.me/v2/bot/message/push", {"to": user_id, "messages": messages}
     else:
         url, body = "https://api.line.me/v2/bot/message/broadcast", {"messages": messages}
-    status, resp = http_post_json(url, body, {"Authorization": f"Bearer {token}"})
-    print(f"LINE {status} {resp}")
+    try:
+        status, resp = http_post_json(url, body, {"Authorization": f"Bearer {token}"})
+        print(f"LINE {status} {resp}")
+        return True
+    except urllib.error.HTTPError as e:
+        print(f"LINE 推播失敗 HTTP {e.code}: {e.read().decode('utf-8', 'ignore')}")
+        if e.code == 401:
+            print("→ access token 不對：請到 developers.line.biz/console → channel → Messaging API 分頁最底 → Channel access token (long-lived) 重新 Issue")
+        elif e.code == 400:
+            print("→ user ID 不對，或你還沒把官方帳號加為好友")
+        return False
 
 
 # ----------------------------------------------------------------- main
 def main():
     args = set(sys.argv[1:])
     if "--test-line" in args:
-        send_line("✅ 機票監控已連上 LINE，明天開始每天推播！")
-        return
+        sys.exit(0 if send_line("✅ 機票監控已連上 LINE，明天開始每天推播！") else 1)
 
     dry = "--dry-run" in args
     token = os.environ.get("TRAVELPAYOUTS_TOKEN")
@@ -348,10 +368,15 @@ def main():
 
     if dry:
         return
-    if fresh or alerts or CONFIG["send_when_nothing_found"]:
-        send_line(msg)
+    # 先存價格歷史，就算 LINE 失敗也不會白跑
     save_json(HISTORY_FILE, update_history(history, today_min))
-    save_json(SEEN_FILE, seen)
+    sent = True
+    if fresh or alerts or CONFIG["send_when_nothing_found"]:
+        sent = send_line(msg)
+    if sent:
+        save_json(SEEN_FILE, seen)  # 推播成功才標記為已通知，失敗明天會再推
+    else:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
