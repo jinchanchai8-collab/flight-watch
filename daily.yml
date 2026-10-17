@@ -1,0 +1,34 @@
+name: 每日機票監控
+
+on:
+  schedule:
+    - cron: "7 0 * * *"   # UTC 00:07 = 台灣時間每天 08:07
+  workflow_dispatch:       # 可在 Actions 頁面手動按 Run
+
+permissions:
+  contents: write          # 讓 bot 把價格歷史存回 repo
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 抓價格並推播 LINE
+        env:
+          TRAVELPAYOUTS_TOKEN: ${{ secrets.TRAVELPAYOUTS_TOKEN }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+        run: python flight_watch.py
+
+      - name: 儲存價格歷史
+        run: |
+          git config user.name "flight-watch-bot"
+          git config user.email "flight-watch-bot@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet || git commit -m "price history $(date -u +%F)"
+          git push

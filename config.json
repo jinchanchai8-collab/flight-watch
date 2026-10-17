@@ -1,0 +1,60 @@
+{
+  "origins": ["TPE", "KHH", "RMQ"],
+  "months_ahead": 6,
+  "one_way": false,
+  "currency": "twd",
+  "market": "",
+  "max_deals_in_message": 10,
+  "send_when_nothing_found": true,
+  "dedupe_days": 5,
+
+  "history_rules": {
+    "min_history_points": 5,
+    "good_ratio": 0.8,
+    "error_ratio": 0.5
+  },
+
+  "regions": {
+    "日本": {
+      "cities": ["TYO", "OSA", "NGO", "FUK", "OKA", "SPK", "SDJ", "KMJ", "HKD", "KOJ", "OKJ", "TAK", "KIJ", "HIJ", "AOJ", "IBR", "FSZ"],
+      "max_price": 9000,
+      "error_price": 4500
+    },
+    "韓國": {
+      "cities": ["SEL", "PUS", "CJU", "TAE"],
+      "max_price": 8000,
+      "error_price": 4000
+    },
+    "港澳": {
+      "cities": ["HKG", "MFM"],
+      "max_price": 5500,
+      "error_price": 2800
+    },
+    "東南亞": {
+      "cities": ["BKK", "CNX", "HKT", "SIN", "KUL", "PEN", "BKI", "SGN", "HAN", "DAD", "CXR", "PQC", "MNL", "CEB", "CRK", "JKT", "SUB", "DPS", "PNH", "RGN"],
+      "max_price": 8000,
+      "error_price": 4000
+    },
+    "北美": {
+      "cities": ["LAX", "SFO", "SEA", "NYC", "ONT", "DFW", "IAH", "CHI", "PHX", "YVR", "YTO"],
+      "max_price": 26000,
+      "error_price": 14000
+    },
+    "歐洲": {
+      "cities": ["LON", "PAR", "AMS", "VIE", "MUC", "FRA", "PRG", "MIL", "ROM", "IST"],
+      "max_price": 28000,
+      "error_price": 15000
+    },
+    "大洋洲": {
+      "cities": ["SYD", "BNE", "MEL", "AKL", "GUM"],
+      "max_price": 20000,
+      "error_price": 11000
+    }
+  },
+
+  "error_fare_feeds": [
+    "https://www.secretflying.com/feed/",
+    "https://www.fly4free.com/feed/"
+  ],
+  "feed_keywords": ["Taipei", "Taiwan", "Kaohsiung", "Taichung", "TPE", "KHH", "台北", "台灣", "高雄"]
+}
