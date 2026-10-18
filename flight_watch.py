@@ -666,10 +666,11 @@ def build_daily(deals, alerts, notes, errors, stats, biz=None, hpicks=None):
             lines += [("🚨 " if a["error"] else "• ") + a["title"], a["link"]]
     if notes:
         lines += ["", "🧠 自我檢討"] + notes[:5]
-    if errors:
-        lines += ["", f"⚠️ {len(errors)} 個資料來源抓取失敗"]
+    shown = [e for e in errors if not e.startswith("RSS ")]  # RSS 情報站常擋機器人，只記在 log 不推播
+    if shown:
+        lines += ["", f"⚠️ {len(shown)} 個資料來源抓取失敗"]
         reasons = {}
-        for e in errors:
+        for e in shown:
             r = e.split(": ", 1)[-1][:60]
             reasons[r] = reasons.get(r, 0) + 1
         lines += [f"・{r}（{n} 次）" for r, n in list(reasons.items())[:3]]
