@@ -12,6 +12,9 @@
 8. **🇹🇼 連假精選**：每個即將到來的台灣連假，列出涵蓋整段連假、最划算的直飛票與需請假天數；涵蓋連假的票在前 10 名排名中也會加分
 9. 每筆票附 **👥 2 人總價**（廉航含行李）
 10. 另掃 **Secret Flying** 錯價情報
+11. **LINE 卡片式訊息**：每筆票一張卡片可左右滑動、按鈕直接開 Skyscanner；若 LINE 拒收卡片會自動改送文字版（`config.json` 的 `line_format` 改成 `text` 可固定用文字版）
+
+手動執行時 Run workflow 的 mode 可選：`daily`（日報）、`preview`（預覽，不記錄已通知、可重複看）、`alert`（錯價快報）。
 
 完全免費：GitHub Actions 免費排程、Travelpayouts 免費 API、LINE 官方帳號免費方案（每天 1 則，一個月約 30 則，遠低於免費額度）。
 

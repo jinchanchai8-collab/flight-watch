@@ -250,5 +250,6 @@
     "error_drop": 0.5,
     "min_samples": 5,
     "max_show": 3
-  }
+  },
+  "line_format": "flex"
 }

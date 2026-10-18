@@ -2,7 +2,7 @@
 "name": "每日機票監控",
 "on": {
   "schedule": [ { "cron": "7 0 * * *" }, { "cron": "37 0 * * *" }, { "cron": "17 1 * * *" } ],
-  "workflow_dispatch": { "inputs": { "mode": { "description": "daily=手動日報 / auto-daily=自動日報 / alert=錯價快報", "required": false, "default": "daily" } } }
+  "workflow_dispatch": { "inputs": { "mode": { "description": "daily=手動日報 / auto-daily=自動日報 / alert=錯價快報 / preview=預覽（不記錄已通知）", "required": false, "default": "daily" } } }
 },
 "permissions": { "contents": "write" },
 "concurrency": { "group": "flight-watch", "cancel-in-progress": false },

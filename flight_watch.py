@@ -695,6 +695,141 @@ def build_alert(deals, alerts, biz=None):
     return "\n".join(lines).strip()
 
 
+# ------------------------------------------------------- 9) LINE 卡片（Flex）
+TAG_COLOR = {"🚨疑似錯價": "#D32F2F", "🔥大降價": "#EF6C00", "📉比平常便宜": "#00897B"}
+
+
+def _t(text, size="sm", color="#555555", weight="regular", wrap=True, **kw):
+    return {"type": "text", "text": str(text)[:300], "size": size, "color": color, "weight": weight, "wrap": wrap, **kw}
+
+
+def _btn(label, uri, style="primary", color="#1E88E5"):
+    return {"type": "button", "style": style, "height": "sm", "color": color,
+            "action": {"type": "uri", "label": label[:20], "uri": uri}}
+
+
+def _bubble(header_text, header_color, body, buttons):
+    return {
+        "type": "bubble", "size": "kilo",
+        "header": {"type": "box", "layout": "vertical", "backgroundColor": header_color, "paddingAll": "10px",
+                   "contents": [_t(header_text, "sm", "#FFFFFF", "bold")]},
+        "body": {"type": "box", "layout": "vertical", "spacing": "xs", "paddingAll": "12px", "contents": body},
+        "footer": {"type": "box", "layout": "vertical", "spacing": "xs", "paddingAll": "10px", "contents": buttons},
+    }
+
+
+def deal_bubble(i, d):
+    trip = "單程" if CONFIG["one_way"] else "來回"
+    dates = fmt_date(d["depart"]) + (f"–{fmt_date(d['return'])}" if d["return"] else "")
+    days = f"（{d['days']}天）" if d.get("days") else ""
+    body = [
+        _t(f"{name(d['origin'])} → {name(d['dest'])}", "lg", "#222222", "bold"),
+        _t(f"{country(d['dest'])}｜直飛{trip}", "xs", "#888888"),
+        _t(f"NT${d['price']:,}", "xxl", TAG_COLOR.get(d["tag"], "#222222"), "bold"),
+        _t(f"此航線{int(d['depart'][5:7])}月一般約 NT${d['base']:,}", "xs", "#999999"),
+        {"type": "separator", "margin": "md"},
+        _t(f"✈️ {airline_name(d['airline'])} {d['airline']}{d['flight']}", "sm", margin="md"),
+        _t(f"📅 {dates}{days}"),
+    ]
+    tw, leave, local = holiday_info(d)
+    if tw:
+        body.append(_t(f"🇹🇼 含{'、'.join(tw)}，請假 {leave} 天", color="#1565C0", weight="bold"))
+    elif leave is not None:
+        body.append(_t(f"🗓 需請假 {leave} 天"))
+    lcc = lcc_estimate(d)
+    if lcc:
+        body.append(_t(f"🧳 廉航，加 20kg 行李約 NT${lcc[1]:,}", color="#6D4C41"))
+    if PARTY > 1:
+        per = lcc[1] if lcc else d["price"]
+        body.append(_t(f"👥 {PARTY} 人約 NT${per * PARTY:,}"))
+    for h in local[:1]:
+        body.append(_t(f"🎌 當地{h['name']}：{h['note']}", "xs", "#AD1457"))
+    if d["low_sample"]:
+        body.append(_t(f"⚠️ 樣本少（{d['n']} 筆），請多比價", "xs", "#F57C00"))
+    return _bubble(f"{i}. {d['tag']}  便宜 {d['drop']:.0%}", TAG_COLOR.get(d["tag"], "#455A64"),
+                   body, [_btn("Skyscanner 查看", skyscanner_link(d))])
+
+
+def biz_bubble(d):
+    trip = "單程" if CONFIG["one_way"] else "來回"
+    dates = fmt_date(d["depart"]) + (f"–{fmt_date(d['return'])}" if d["return"] else "")
+    days = f"（{d['days']}天）" if d.get("days") else ""
+    body = [
+        _t(f"{name(d['origin'])} → {name(d['dest'])}", "lg", "#222222", "bold"),
+        _t(f"{country(d['dest'])}｜商務艙直飛{trip}", "xs", "#888888"),
+        _t(f"NT${d['price']:,}", "xxl", "#6A1B9A", "bold"),
+    ] + [_t("・" + r, "xs", "#6A1B9A") for r in d["reasons"]] + [
+        {"type": "separator", "margin": "md"},
+        _t(f"📅 {dates}{days}", margin="md"),
+    ]
+    tw, leave, _ = holiday_info(d)
+    if tw:
+        body.append(_t(f"🇹🇼 含{'、'.join(tw)}，請假 {leave} 天", color="#1565C0", weight="bold"))
+    return _bubble("💼 商務艙錯價", "#6A1B9A", body, [_btn("Skyscanner 查看", skyscanner_link(d), color="#6A1B9A")])
+
+
+def holiday_bubble(h, ds):
+    body, buttons = [], []
+    for d in ds:
+        lcc = "（廉航）" if d["airline"] in LCC["airlines"] else ""
+        body += [
+            _t(f"{name(d['origin'])} → {name(d['dest'])}（{country(d['dest'])}）", "md", "#222222", "bold"),
+            _t(f"NT${d['price']:,}{lcc}  便宜 {d['drop']:.0%}", "md", "#1565C0", "bold"),
+            _t(f"📅 {fmt_date(d['depart'])}–{fmt_date(d['return'])}｜請假 {d['leave']} 天", "xs", "#666666"),
+            {"type": "separator", "margin": "sm"},
+        ]
+        buttons.append(_btn(f"{name(d['dest'])} 查看", skyscanner_link(d), color="#1565C0"))
+    if body and body[-1]["type"] == "separator":
+        body.pop()
+    return _bubble(f"🇹🇼 {h['name']} {fmt_date(h['start'])}–{fmt_date(h['end'])}", "#1565C0", body, buttons)
+
+
+def _carousel(alt, bubbles):
+    return {"type": "flex", "altText": alt[:400], "contents": {"type": "carousel", "contents": bubbles[:12]}}
+
+
+def build_daily_flex(deals, alerts, notes, errors, stats, biz, hpicks):
+    msgs = []
+    if deals:
+        head = f"✈️ 機票日報 {TODAY.month}/{TODAY.day}｜降價前 {len(deals)} 名，左右滑動看卡片 👉"
+    elif stats.get("repeat"):
+        head = f"✈️ 機票日報 {TODAY.month}/{TODAY.day}｜今天沒有新的降價票（{stats['repeat']} 筆之前已通知過）"
+    else:
+        head = f"✈️ 機票日報 {TODAY.month}/{TODAY.day}｜今天沒有明顯低於平常價格的直飛票"
+    msgs.append({"type": "text", "text": head})
+    if deals:
+        alt = "、".join(f"{name(d['dest'])} NT${d['price']:,}(-{d['drop']:.0%})" for d in deals[:6])
+        msgs.append(_carousel(f"今日降價：{alt}", [deal_bubble(i, d) for i, d in enumerate(deals, 1)]))
+    extra = [biz_bubble(d) for d in (biz or [])] + [holiday_bubble(h, ds) for h, ds in (hpicks or [])]
+    if extra:
+        msgs.append(_carousel("商務艙錯價／連假精選", extra))
+    tail = []
+    if alerts:
+        tail += ["📰 錯價情報（Secret Flying）"] + [("🚨 " if a["error"] else "• ") + a["title"] + "\n" + a["link"] for a in alerts[:3]] + [""]
+    if notes:
+        tail += ["🧠 自我檢討"] + notes[:5] + [""]
+    shown = [e for e in errors if not e.startswith("RSS ")]
+    if shown:
+        tail.append(f"⚠️ {len(shown)} 個資料來源抓取失敗：{shown[0].split(': ', 1)[-1][:60]}")
+    tail += [x for x in footer(stats) if x != ""]
+    msgs.append({"type": "text", "text": "\n".join(tail).strip()[:4900]})
+    return msgs[:5]
+
+
+def build_alert_flex(deals, alerts, biz):
+    msgs = [{"type": "text", "text": f"🚨 錯價快報 {dt.datetime.now(TZ):%m/%d %H:%M}｜錯價通常幾小時內就會被修正，請盡快確認！"}]
+    bubbles = [deal_bubble(i, d) for i, d in enumerate(deals, 1)] + [biz_bubble(d) for d in (biz or [])]
+    if bubbles:
+        alt = "、".join(f"{name(d['dest'])} NT${d['price']:,}" for d in (deals + (biz or []))[:6])
+        msgs.append(_carousel(f"錯價：{alt}", bubbles))
+    tail = []
+    if alerts:
+        tail += ["📰 Secret Flying 錯價情報"] + ["🚨 " + a["title"] + "\n" + a["link"] for a in alerts[:3]] + [""]
+    tail.append("※ 價格是快取的。點 Skyscanner 連結確認時，價格可能已經變了，這是正常的。")
+    msgs.append({"type": "text", "text": "\n".join(tail).strip()})
+    return msgs[:5]
+
+
 def chunk_text(text, size=4800, max_parts=5):
     parts, cur = [], ""
     for line in text.split("\n"):
@@ -707,7 +842,7 @@ def chunk_text(text, size=4800, max_parts=5):
     return [p.strip() for p in parts][:max_parts]
 
 
-def send_line(text):
+def send_line(text, flex_messages=None):
     token = "".join((os.environ.get("LINE_CHANNEL_ACCESS_TOKEN") or "").split())
     if not token:
         raise SystemExit("缺少 LINE_CHANNEL_ACCESS_TOKEN")
@@ -716,14 +851,27 @@ def send_line(text):
     if user_id:
         ok = user_id.startswith("U") and len(user_id) == 33
         print(f"[LINE 檢查] user ID 長度 {len(user_id)}、開頭 {user_id[:1]}（正常為 U 開頭、33 碼）{'✅' if ok else '❌'}")
-    messages = [{"type": "text", "text": p} for p in chunk_text(text)]
-    if user_id:
-        url, body = "https://api.line.me/v2/bot/message/push", {"to": user_id, "messages": messages}
-    else:
-        url, body = "https://api.line.me/v2/bot/message/broadcast", {"messages": messages}
+    url = "https://api.line.me/v2/bot/message/push" if user_id else "https://api.line.me/v2/bot/message/broadcast"
+
+    def push(messages):
+        body = {"to": user_id, "messages": messages} if user_id else {"messages": messages}
+        return http_post_json(url, body, {"Authorization": f"Bearer {token}"})
+
+    if flex_messages:
+        try:
+            status, resp = push(flex_messages)
+            print(f"LINE（卡片）{status} {resp}")
+            send_line.used = "flex"
+            return True
+        except urllib.error.HTTPError as e:
+            if e.code != 400:
+                print(f"LINE 推播失敗 HTTP {e.code}: {e.read().decode('utf-8', 'ignore')}")
+                return False
+            print(f"卡片格式被 LINE 拒收，改用文字版：{e.read().decode('utf-8', 'ignore')[:300]}")
     try:
-        status, resp = http_post_json(url, body, {"Authorization": f"Bearer {token}"})
+        status, resp = push([{"type": "text", "text": p} for p in chunk_text(text)])
         print(f"LINE {status} {resp}")
+        send_line.used = "text"
         return True
     except urllib.error.HTTPError as e:
         print(f"LINE 推播失敗 HTTP {e.code}: {e.read().decode('utf-8', 'ignore')}")
@@ -749,6 +897,8 @@ def detect_mode(args):
         return "alert", True
     if mode_in == "auto-daily":
         return "daily", True
+    if mode_in == "preview":
+        return "preview", False
     if sched:
         return ("daily", True) if sched in CONFIG["alert"]["daily_crons"] else ("alert", True)
     return "daily", False
@@ -760,6 +910,9 @@ def main():
         sys.exit(0 if send_line("✅ 機票監控已連上 LINE！") else 1)
     dry = "--dry-run" in args
     mode, auto = detect_mode(args)
+    preview = mode == "preview"
+    if preview:
+        mode = "daily"
     print(f"模式：{'錯價快報' if mode == 'alert' else '每日日報'}{'（自動）' if auto else '（手動）'}")
     state = load_json(STATE_FILE, {})
     if mode == "daily" and auto and state.get("last_daily") == TODAY_S:
@@ -783,6 +936,9 @@ def main():
     seen = load_json(SEEN_FILE, {})
     cutoff = (TODAY - dt.timedelta(days=CONFIG["dedupe_days"])).isoformat()
     seen = {k: v for k, v in seen.items() if v >= cutoff}
+    if preview:
+        print("預覽模式：忽略「已通知過」並且不記錄，可重複看同樣內容")
+        seen_saved, seen = seen, {}
 
     groups = group_today(fares)
     biz_groups = {"J:" + k: v for k, v in group_today(biz).items()}
@@ -857,8 +1013,12 @@ def main():
                 save_json(LAST_RUN_FILE, run_info)
             return
         msg = build_alert(top, fresh_alerts, biz_top)
+        flex = build_alert_flex(top, fresh_alerts, biz_top)
     else:
         msg = build_daily(top, fresh_alerts, notes, errors, stats, biz_top, hpicks)
+        flex = build_daily_flex(top, fresh_alerts, notes, errors, stats, biz_top, hpicks)
+    if CONFIG.get("line_format", "flex") != "flex":
+        flex = None
     print("-" * 40)
     print(msg)
     print("-" * 40)
@@ -867,10 +1027,13 @@ def main():
 
     save_json(BASELINE_FILE, baseline)
     save_json(LEARN_FILE, learning)
-    sent = send_line(msg)
+    sent = send_line(msg, flex)
     run_info["line_sent"] = sent
+    run_info["line_format"] = getattr(send_line, "used", None)
     save_json(LAST_RUN_FILE, run_info)
-    if sent:
+    if sent and preview:
+        pass  # 預覽不寫入已通知紀錄與今日狀態
+    elif sent:
         save_json(SEEN_FILE, seen)
         if mode == "daily":
             state["last_daily"] = TODAY_S
