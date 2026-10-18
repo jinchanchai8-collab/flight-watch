@@ -50,6 +50,10 @@ R = CONFIG["ranking"]
 LEARN = CONFIG["learning"]
 DIV = CONFIG["diversity"]
 LCC = CONFIG["lcc"]
+HF = CONFIG.get("holiday_focus", {})
+BIZ = CONFIG.get("business", {"enabled": False})
+PARTY = CONFIG.get("party", {}).get("show_for", 0)
+LAST_RUN_FILE = DATA_DIR / "last_run.json"     # 每次執行的統計（除錯用，不含金鑰）
 
 CITY = {  # 代碼: (中文名, 國家)
     "TYO": ("東京", "日本"), "OSA": ("大阪", "日本"), "NGO": ("名古屋", "日本"), "FUK": ("福岡", "日本"),
@@ -202,7 +206,49 @@ def skyscanner_link(f):
     path = f"{f['origin_airport'].lower()}/{f['dest_airport'].lower()}/{ymd(f['depart'])}/"
     if f["return"]:
         path += f"{ymd(f['return'])}/"
-    return f"https://www.skyscanner.com.tw/transport/flights/{path}?preferdirects=true"
+    cabin = "&cabinclass=business" if f.get("cabin") == "business" else ""
+    return f"https://www.skyscanner.com.tw/transport/flights/{path}?preferdirects=true{cabin}"
+
+
+def fetch_business(token):
+    """商務艙（trip_class=1）近期價格，只留直飛、監控清單內的目的地。"""
+    c2r = city_to_region()
+    fares, errors = [], []
+    for origin in CONFIG["origins"]:
+        params = {
+            "origin": origin, "currency": CONFIG["currency"], "period_type": "year",
+            "one_way": "true" if CONFIG["one_way"] else "false", "trip_class": 1,
+            "sorting": "price", "limit": 1000, "page": 1, "show_to_affiliates": "true",
+        }
+        url = "https://api.travelpayouts.com/aviasales/v3/get_latest_prices?" + urllib.parse.urlencode(params)
+        try:
+            payload = json.loads(http_get(url, {"X-Access-Token": token}))
+        except Exception as e:  # noqa: BLE001
+            errors.append(f"Travelpayouts 商務艙 {origin}: {e}")
+            continue
+        for t in payload.get("data") or []:
+            dest = t.get("destination")
+            if dest not in c2r:
+                continue
+            changes = t.get("number_of_changes", t.get("transfers", 0)) or 0
+            if changes != 0 or (t.get("return_transfers") or 0) != 0:
+                continue
+            if t.get("trip_class") not in (None, 1):
+                continue
+            depart = (t.get("depart_date") or t.get("departure_at") or "")[:10]
+            if not depart or depart < TODAY_S:
+                continue
+            price = t.get("value") or t.get("price")
+            if not price:
+                continue
+            fares.append({
+                "origin": t.get("origin") or origin, "origin_airport": t.get("origin_airport") or origin,
+                "dest": dest, "dest_airport": t.get("destination_airport") or dest,
+                "region": c2r[dest], "price": int(price), "airline": t.get("airline", "") or "",
+                "flight": str(t.get("flight_number", "") or ""), "depart": depart,
+                "return": (t.get("return_date") or t.get("return_at") or "")[:10], "cabin": "business",
+            })
+    return fares, errors
 
 
 # ------------------------------------------------------- 2) 行程條件篩選
@@ -292,6 +338,77 @@ def rank_deals(fares, groups, baseline, learning):
     return sorted(best.values(), key=lambda d: -d["drop"])
 
 
+def evaluate_business(biz, groups, biz_groups, baseline):
+    """
+    商務艙錯價判斷（兩種訊號，任一成立）：
+      1. 價格 ≤ 同航線同月份「經濟艙」一般價 × vs_economy_ratio（商務艙平常約是經濟艙 3–5 倍）
+      2. 樣本夠時，比商務艙自己的一般價便宜 error_drop 以上
+    """
+    best = {}
+    for f in biz:
+        ok, days = trip_ok(f)
+        if not ok:
+            continue
+        key = f"{route_of(f)}|{f['depart'][:7]}"
+        econ, _, _ = baseline_price(key, groups, baseline)
+        jbase, jn, _ = baseline_price("J:" + key, biz_groups, baseline)
+        reasons = []
+        if econ and f["price"] <= econ * BIZ["vs_economy_ratio"]:
+            reasons.append(f"只比經濟艙一般價（NT${int(econ):,}）高 {f['price'] / econ - 1:.0%}" if f["price"] > econ
+                           else f"比經濟艙一般價（NT${int(econ):,}）還便宜")
+        if jbase and jn >= BIZ["min_samples"] and 1 - f["price"] / jbase >= BIZ["error_drop"]:
+            reasons.append(f"比商務艙一般價（NT${int(jbase):,}）便宜 {1 - f['price'] / jbase:.0%}")
+        if not reasons:
+            continue
+        d = {**f, "days": days, "econ": int(econ) if econ else None, "jbase": int(jbase) if jbase else None,
+             "reasons": reasons, "ratio": f["price"] / econ if econ else 9}
+        r = route_of(f)
+        if r not in best or d["ratio"] < best[r]["ratio"]:
+            best[r] = d
+    return sorted(best.values(), key=lambda d: d["ratio"])
+
+
+def holiday_picks(fares, groups, baseline):
+    """每個即將到來的台灣連假（≥3 天），找涵蓋整段連假、最划算的直飛票。"""
+    horizon = (TODAY + dt.timedelta(days=31 * CONFIG["months_ahead"])).isoformat()
+    soon = (TODAY + dt.timedelta(days=CONFIG["min_days_ahead"])).isoformat()
+    blocks = [h for h in HOLIDAYS["taiwan"]
+              if h["start"] >= soon and h["start"] <= horizon
+              and days_between(h["start"], h["end"]) + 1 >= HF.get("min_block_days", 3)]
+    out = []
+    for h in blocks[:HF.get("max_holidays", 4)]:
+        cands = {}
+        for f in fares:
+            if not f["return"] or not (f["depart"] <= h["start"] and f["return"] >= h["end"]):
+                continue
+            ok, days = trip_ok(f)
+            if not ok:
+                continue
+            base, n, how = baseline_price(f"{route_of(f)}|{f['depart'][:7]}", groups, baseline)
+            if not base:
+                continue
+            drop = 1 - f["price"] / base
+            if drop < HF.get("min_drop", 0.10):
+                continue
+            _, leave, _ = holiday_info(f)
+            d = {**f, "drop": drop, "base": int(base), "days": days, "leave": leave}
+            r = route_of(f)
+            if r not in cands or (d["drop"], -d["leave"]) > (cands[r]["drop"], -cands[r]["leave"]):
+                cands[r] = d
+        picks, used = [], set()
+        for d in sorted(cands.values(), key=lambda d: (-d["drop"], d["leave"])):
+            c = country(d["dest"])
+            if c in used:
+                continue
+            used.add(c)
+            picks.append(d)
+            if len(picks) >= HF.get("picks_per_holiday", 2):
+                break
+        if picks:
+            out.append((h, picks))
+    return out
+
+
 def diversify(ranked, top_n):
     """保留長程名額 + 每國/每區上限；不夠再放寬補滿。"""
     picked, by_country, by_region = [], {}, {}
@@ -305,6 +422,9 @@ def diversify(ranked, top_n):
         by_country[country(d["dest"])] = by_country.get(country(d["dest"]), 0) + 1
         by_region[d["region"]] = by_region.get(d["region"], 0) + 1
 
+    for d in ranked:  # 配合台灣連假：涵蓋連假的票加分
+        d["score"] = d["drop"] + (HF.get("rank_bonus", 0) if holiday_info(d)[0] else 0)
+    ranked = sorted(ranked, key=lambda d: -d["score"])
     long_haul = [d for d in ranked if CONFIG["regions"][d["region"]]["long_haul"]]
     for d in long_haul:
         if len(picked) >= DIV["long_haul_slots"]:
@@ -326,7 +446,7 @@ def diversify(ranked, top_n):
             break
         if d not in picked:
             take(d)
-    return sorted(picked, key=lambda d: -d["drop"])
+    return sorted(picked, key=lambda d: -d["score"])
 
 
 # ------------------------------------------------------ 5) 自我檢討（學習）
@@ -459,6 +579,9 @@ def deal_lines(i, d):
     lcc = lcc_estimate(d)
     if lcc:
         out.append(f"🧳 廉航不含托運，加 20kg 行李約 +NT${lcc[0]:,} → 約 NT${lcc[1]:,}")
+    if PARTY > 1:
+        per = lcc[1] if lcc else d["price"]
+        out.append(f"👥 {PARTY} 人約 NT${per * PARTY:,}" + ("（含行李）" if lcc else ""))
     tw, leave, local = holiday_info(d)
     if tw:
         out.append(f"🇹🇼 含台灣{ '、'.join(tw) }，只需請假 {leave} 天")
@@ -468,6 +591,33 @@ def deal_lines(i, d):
         out.append(f"🎌 遇當地{h['name']}：{h['note']}")
     out.append(skyscanner_link(d))
     return out
+
+
+def biz_lines(d):
+    trip = "單程" if CONFIG["one_way"] else "來回"
+    dates = fmt_date(d["depart"]) + (f"–{fmt_date(d['return'])}" if d["return"] else "")
+    days = f"（{d['days']}天）" if d.get("days") else ""
+    al = f"{airline_name(d['airline'])} " if d["airline"] else ""
+    out = [f"💼 {name(d['origin'])}→{name(d['dest'])}（{country(d['dest'])}）商務艙{trip} NT${d['price']:,}",
+           "・" + "；".join(d["reasons"]),
+           f"{al}直飛｜{dates}{days}"]
+    tw, leave, _ = holiday_info(d)
+    if tw:
+        out.append(f"🇹🇼 含台灣{'、'.join(tw)}，只需請假 {leave} 天")
+    out.append(skyscanner_link(d))
+    return out
+
+
+def holiday_section(picks):
+    lines = ["", "🇹🇼 連假精選（涵蓋整段連假的直飛票）"]
+    for h, ds in picks:
+        lines.append(f"🎏 {h['name']}（{fmt_date(h['start'])}–{fmt_date(h['end'])}）")
+        for d in ds:
+            lcc = "（廉航）" if d["airline"] in LCC["airlines"] else ""
+            lines.append(f"・{name(d['origin'])}→{name(d['dest'])}（{country(d['dest'])}）NT${d['price']:,}{lcc} 便宜 {d['drop']:.0%}"
+                         f"｜{fmt_date(d['depart'])}–{fmt_date(d['return'])} 請假 {d['leave']} 天")
+            lines.append(f"  {skyscanner_link(d)}")
+    return lines
 
 
 def holiday_reminder():
@@ -491,7 +641,7 @@ def footer(stats):
     return lines
 
 
-def build_daily(deals, alerts, notes, errors, stats):
+def build_daily(deals, alerts, notes, errors, stats, biz=None, hpicks=None):
     lo_asia = CONFIG["regions"]["日本"]["trip_days"]
     lines = [f"✈️ 台灣出發直飛機票日報 {TODAY.month}/{TODAY.day}",
              f"條件：{CONFIG['min_days_ahead']} 天後出發｜亞洲 {lo_asia[0]}–{lo_asia[1]} 天｜長程 10 天以上"]
@@ -504,6 +654,12 @@ def build_daily(deals, alerts, notes, errors, stats):
     for i, d in enumerate(deals, 1):
         lines.append("")
         lines += deal_lines(i, d)
+    if biz:
+        lines += ["", "💼 商務艙錯價"]
+        for d in biz:
+            lines += biz_lines(d)
+    if hpicks:
+        lines += holiday_section(hpicks)
     if alerts:
         lines += ["", "📰 錯價情報（Secret Flying）"]
         for a in alerts[:3]:
@@ -521,11 +677,15 @@ def build_daily(deals, alerts, notes, errors, stats):
     return "\n".join(lines).strip()
 
 
-def build_alert(deals, alerts):
+def build_alert(deals, alerts, biz=None):
     lines = [f"🚨 錯價快報 {dt.datetime.now(TZ):%m/%d %H:%M}", "錯價通常幾小時內就會被修正，有興趣請盡快確認！"]
     for i, d in enumerate(deals, 1):
         lines.append("")
         lines += deal_lines(i, d)
+    if biz:
+        lines += ["", "💼 商務艙錯價"]
+        for d in biz:
+            lines += biz_lines(d)
     if alerts:
         lines += ["", "📰 Secret Flying 錯價情報"]
         for a in alerts[:3]:
@@ -607,9 +767,13 @@ def main():
 
     token = "".join((os.environ.get("TRAVELPAYOUTS_TOKEN") or "").split())
     errors, fares = [], []
+    biz = []
     if token:
         fares, errs = fetch_direct_fares(token)
         errors += errs
+        if BIZ.get("enabled"):
+            biz, errs = fetch_business(token)
+            errors += errs
     else:
         errors.append("缺少 TRAVELPAYOUTS_TOKEN")
 
@@ -620,6 +784,7 @@ def main():
     seen = {k: v for k, v in seen.items() if v >= cutoff}
 
     groups = group_today(fares)
+    biz_groups = {"J:" + k: v for k, v in group_today(biz).items()}
     notes = review_candidates(learning, fares) if (fares and mode == "daily") else []
     ranked = rank_deals(fares, groups, baseline, learning)
 
@@ -635,6 +800,25 @@ def main():
         seen[key_of(d)] = TODAY_S
     register_candidates(learning, top)
 
+    biz_top = []
+    for d in evaluate_business(biz, groups, biz_groups, baseline):
+        k = "J|" + key_of(d)
+        if k in seen:
+            continue
+        biz_top.append(d)
+        seen[k] = TODAY_S
+        if len(biz_top) >= BIZ.get("max_show", 3):
+            break
+
+    hpicks = []
+    if mode == "daily":
+        for h, ds in holiday_picks(fares, groups, baseline):
+            keep = [d for d in ds if "H|" + key_of(d) not in seen]
+            for d in keep:
+                seen["H|" + key_of(d)] = TODAY_S
+            if keep:
+                hpicks.append((h, keep))
+
     alerts, errs = fetch_feed_alerts()
     errors += errs
     fresh_alerts = []
@@ -647,27 +831,33 @@ def main():
             seen[k] = TODAY_S
 
     if fares:
-        baseline = update_baseline(baseline, groups, LEARN["keep_days"])
+        baseline = update_baseline(baseline, {**groups, **biz_groups}, LEARN["keep_days"])
     stats = {
         "days": len({r["d"] for v in baseline.values() for r in v}),
-        "routes": len({k.split("|")[0] for k in baseline}),
+        "routes": len({k.split("|")[0] for k in baseline if not k.startswith("J:")}),
         "open": len(learning["candidates"]),
         "repeat": len(ranked) - len(fresh),
     }
     print(f"抓到 {len(fares)} 筆直飛票價、{len(groups)} 組航線月份、{len(ranked)} 筆符合條件且低於平常、推播 {len(top)} 筆")
+    print(f"商務艙 {len(biz)} 筆直飛、錯價 {len(biz_top)} 筆；連假精選 {sum(len(x[1]) for x in hpicks)} 筆")
+    run_info = {"at": dt.datetime.now(TZ).isoformat(timespec="minutes"), "mode": mode, "auto": auto,
+                "fares": len(fares), "business_fares": len(biz), "ranked": len(ranked), "pushed": len(top),
+                "business_errors": len(biz_top), "holiday_picks": sum(len(x[1]) for x in hpicks),
+                "errors": [e[:120] for e in errors[:10]]}
     for e in errors:
         print("ERROR:", e)
 
     if mode == "alert":
-        if not top and not fresh_alerts:
+        if not top and not fresh_alerts and not biz_top:
             print("沒有新的錯價，不推播。")
             if not dry:
                 save_json(BASELINE_FILE, baseline)
                 save_json(LEARN_FILE, learning)
+                save_json(LAST_RUN_FILE, run_info)
             return
-        msg = build_alert(top, fresh_alerts)
+        msg = build_alert(top, fresh_alerts, biz_top)
     else:
-        msg = build_daily(top, fresh_alerts, notes, errors, stats)
+        msg = build_daily(top, fresh_alerts, notes, errors, stats, biz_top, hpicks)
     print("-" * 40)
     print(msg)
     print("-" * 40)
@@ -676,7 +866,10 @@ def main():
 
     save_json(BASELINE_FILE, baseline)
     save_json(LEARN_FILE, learning)
-    if send_line(msg):
+    sent = send_line(msg)
+    run_info["line_sent"] = sent
+    save_json(LAST_RUN_FILE, run_info)
+    if sent:
         save_json(SEEN_FILE, seen)
         if mode == "daily":
             state["last_daily"] = TODAY_S
