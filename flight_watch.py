@@ -846,16 +846,26 @@ def send_line(text, flex_messages=None):
     token = "".join((os.environ.get("LINE_CHANNEL_ACCESS_TOKEN") or "").split())
     if not token:
         raise SystemExit("缺少 LINE_CHANNEL_ACCESS_TOKEN")
-    user_id = "".join((os.environ.get("LINE_USER_ID") or "").split())
+    # LINE_USER_ID 可放多個，用逗號分隔：個人 U…、群組 C…、多人聊天室 R…
+    targets = [t for t in "".join((os.environ.get("LINE_USER_ID") or "").split()).split(",") if t]
     print(f"[LINE 檢查] access token 長度 {len(token)}（正常約 170 以上；32 左右代表貼成 Channel secret）")
-    if user_id:
-        ok = user_id.startswith("U") and len(user_id) == 33
-        print(f"[LINE 檢查] user ID 長度 {len(user_id)}、開頭 {user_id[:1]}（正常為 U 開頭、33 碼）{'✅' if ok else '❌'}")
-    url = "https://api.line.me/v2/bot/message/push" if user_id else "https://api.line.me/v2/bot/message/broadcast"
+    for t in targets:
+        kind = {"U": "個人", "C": "群組", "R": "聊天室"}.get(t[:1], "未知")
+        ok = t[:1] in "UCR" and len(t) == 33
+        print(f"[LINE 檢查] 推播對象：{kind}（{t[:1]}…，{len(t)} 碼）{'✅' if ok else '❌ 應為 U/C/R 開頭 33 碼'}")
+
+    def push_one(target, messages):
+        if target:
+            body, url = {"to": target, "messages": messages}, "https://api.line.me/v2/bot/message/push"
+        else:
+            body, url = {"messages": messages}, "https://api.line.me/v2/bot/message/broadcast"
+        return http_post_json(url, body, {"Authorization": f"Bearer {token}"})
 
     def push(messages):
-        body = {"to": user_id, "messages": messages} if user_id else {"messages": messages}
-        return http_post_json(url, body, {"Authorization": f"Bearer {token}"})
+        result = None
+        for t in (targets or [None]):
+            result = push_one(t, messages)
+        return result
 
     if flex_messages:
         try:

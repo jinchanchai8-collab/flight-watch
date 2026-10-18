@@ -45,7 +45,7 @@
 |---|---|
 | `TRAVELPAYOUTS_TOKEN` | 第 1 步的 token |
 | `LINE_CHANNEL_ACCESS_TOKEN` | 第 2 步的 channel access token |
-| `LINE_USER_ID` | 第 2 步的 Your user ID |
+| `LINE_USER_ID` | 第 2 步的 Your user ID（要推到群組就填群組 ID `C…`；多個對象用逗號分隔，例如 `Uxxx,Cxxx`） |
 
 4. **Actions** 分頁 → 若提示啟用就按啟用 → 選「每日機票監控」→ **Run workflow** 手動跑一次，LINE 應該會收到第一則日報
 
@@ -81,6 +81,15 @@ GitHub 內建排程常延遲或漏跑，所以改由 cron-job.org 準時呼叫 G
 | 422 | Request body 格式錯，或 daily.yml 還沒更新 |
 
 ⚠️ 金鑰到期後排程會失效（回應 401），請重新產生並更新兩個排程的 Authorization。
+
+### 5.（選用）推播到 LINE 群組
+1. 把「機票雷達」官方帳號邀進群組（LINE Official Account Manager → 設定 → 帳號設定 → 「允許加入群組」要開啟）
+2. 取得群組 ID：到 https://webhook.site 複製「Your unique URL」→ LINE Developers → channel → Messaging API 分頁 → Webhook URL 貼上 → **Use webhook** 打開
+3. 在群組裡隨便傳一句話 → 回 webhook.site 看最新一筆，找 `"groupId": "C…"`，複製
+4. 把 Use webhook 關掉（避免之後的訊息一直送到 webhook.site）
+5. GitHub Secrets 的 `LINE_USER_ID` 改成群組 ID（只要群組）或 `你的U…,群組C…`
+
+⚠️ LINE 免費額度以「收訊人數」計算，推到 2 人群組每則算 2 則。
 
 ---
 
