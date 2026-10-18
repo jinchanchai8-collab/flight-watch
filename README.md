@@ -1,6 +1,6 @@
 # ✈️ 台灣出發 直飛低價 / 錯價機票監控 → LINE 推播
 
-**每日日報**（早上 08:07）＋ **錯價快報**（12:07、16:07、20:07、00:07 檢查，只有發現新的 🚨 才推播）
+**每日日報**（早上 08:00）＋ **錯價快報**（每 2 小時檢查，只有發現新的 🚨 才推播）。排程由 **cron-job.org** 準時觸發，GitHub 內建排程（08:07／08:37／09:17）當備援，同一天不會重複推日報。
 
 1. 從 **Travelpayouts / Aviasales API** 抓台北、高雄、台中出發，未來 6 個月的**直飛**票價
 2. **篩選**：至少 7 天後出發；旅行天數依地區（日韓港澳東南亞 5–15 天、關島帛琉 4–10 天、歐美 10–30 天、杜拜 7–21 天、澳紐 8–21 天）
@@ -42,6 +42,39 @@
 | `LINE_USER_ID` | 第 2 步的 Your user ID |
 
 4. **Actions** 分頁 → 若提示啟用就按啟用 → 選「每日機票監控」→ **Run workflow** 手動跑一次，LINE 應該會收到第一則日報
+
+### 4. 設定準時排程（cron-job.org）
+GitHub 內建排程常延遲或漏跑，所以改由 cron-job.org 準時呼叫 GitHub。
+
+**4-1 產生 GitHub 金鑰（只能觸發這個倉庫的 Actions）**
+1. GitHub 右上頭像 → **Settings** → 左側最下方 **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**
+2. Token name：`cron-job`；Expiration：選最長（1 年）
+3. Repository access：**Only select repositories** → 選 `flight-watch`
+4. Permissions → Repository permissions → **Actions** 設為 **Read and write**（其他不用動）
+5. **Generate token** → 複製（`github_pat_` 開頭，只會顯示一次）
+
+**4-2 在 cron-job.org 建兩個排程**
+1. 到 https://cron-job.org 免費註冊 → 右上 Settings 把時區設為 **Asia/Taipei**
+2. **Create cronjob**，兩個排程的共同設定：
+   - URL：`https://api.github.com/repos/jinchanchai8-collab/flight-watch/actions/workflows/daily.yml/dispatches`
+   - **Advanced** 分頁 → Request method：**POST**
+   - Headers（按 Add 一行一行加）：
+     - `Accept` = `application/vnd.github+json`
+     - `Authorization` = `Bearer 你的github_pat_金鑰`
+     - `X-GitHub-Api-Version` = `2022-11-28`
+     - `Content-Type` = `application/json`
+3. 排程 A「機票日報」：Execution schedule 每天 **08:00**；Request body：`{"ref":"main","inputs":{"mode":"auto-daily"}}`
+4. 排程 B「錯價快報」：Execution schedule 每 **2 小時**；Request body：`{"ref":"main","inputs":{"mode":"alert"}}`
+5. 每個排程建好後按 **Test run**，回應 **204** 就代表成功（GitHub Actions 會出現一筆新的執行）
+
+| 回應碼 | 意思 |
+|---|---|
+| 204 | 成功 |
+| 401 | 金鑰錯誤或過期 |
+| 403 / 404 | 金鑰沒有選到 flight-watch 倉庫，或 Actions 權限不是 Read and write |
+| 422 | Request body 格式錯，或 daily.yml 還沒更新 |
+
+⚠️ 金鑰到期後排程會失效（回應 401），請重新產生並更新兩個排程的 Authorization。
 
 ---
 

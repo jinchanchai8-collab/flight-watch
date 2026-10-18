@@ -41,6 +41,7 @@ DATA_DIR = ROOT / "data"
 BASELINE_FILE = DATA_DIR / "baseline.json"
 LEARN_FILE = DATA_DIR / "learning.json"
 SEEN_FILE = DATA_DIR / "seen.json"
+STATE_FILE = DATA_DIR / "state.json"          # 記錄今天日報是否已送出（備援排程用）
 TZ = dt.timezone(dt.timedelta(hours=8))
 TODAY = dt.datetime.now(TZ).date()
 TODAY_S = TODAY.isoformat()
@@ -574,12 +575,22 @@ def send_line(text):
 
 # ----------------------------------------------------------------- main
 def detect_mode(args):
-    if "--alert-only" in args:
-        return "alert"
+    """
+    回傳 (模式, 是否為自動觸發)。
+      MODE=alert       → cron-job.org 錯價快報
+      MODE=auto-daily  → cron-job.org 日報（今天送過就跳過）
+      GitHub 排程      → 備援日報（今天送過就跳過）
+      手動 Run workflow → 日報（一定送）
+    """
+    mode_in = os.environ.get("MODE", "").strip()
     sched = os.environ.get("EVENT_SCHEDULE", "").strip()
-    if sched and sched != CONFIG["alert"]["daily_cron"]:
-        return "alert"
-    return "daily"
+    if "--alert-only" in args or mode_in == "alert":
+        return "alert", True
+    if mode_in == "auto-daily":
+        return "daily", True
+    if sched:
+        return ("daily", True) if sched in CONFIG["alert"]["daily_crons"] else ("alert", True)
+    return "daily", False
 
 
 def main():
@@ -587,8 +598,12 @@ def main():
     if "--test-line" in args:
         sys.exit(0 if send_line("✅ 機票監控已連上 LINE！") else 1)
     dry = "--dry-run" in args
-    mode = detect_mode(args)
-    print(f"模式：{'錯價快報' if mode == 'alert' else '每日日報'}")
+    mode, auto = detect_mode(args)
+    print(f"模式：{'錯價快報' if mode == 'alert' else '每日日報'}{'（自動）' if auto else '（手動）'}")
+    state = load_json(STATE_FILE, {})
+    if mode == "daily" and auto and state.get("last_daily") == TODAY_S:
+        print("今天的日報已經送過了（這是備援排程），不重複推播。")
+        return
 
     token = "".join((os.environ.get("TRAVELPAYOUTS_TOKEN") or "").split())
     errors, fares = [], []
@@ -663,6 +678,9 @@ def main():
     save_json(LEARN_FILE, learning)
     if send_line(msg):
         save_json(SEEN_FILE, seen)
+        if mode == "daily":
+            state["last_daily"] = TODAY_S
+            save_json(STATE_FILE, state)
     else:
         sys.exit(1)
 

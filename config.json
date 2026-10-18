@@ -1,30 +1,31 @@
 {
-  "origins": ["TPE", "KHH", "RMQ"],
+  "origins": [
+    "TPE",
+    "KHH",
+    "RMQ"
+  ],
   "months_ahead": 6,
   "one_way": false,
   "currency": "twd",
   "market": "",
   "dedupe_days": 5,
   "min_days_ahead": 7,
-
   "ranking": {
     "top_n": 10,
     "min_drop": 0.15,
-    "big_drop": 0.30,
+    "big_drop": 0.3,
     "min_samples": 5,
     "low_sample_warn": 10
   },
-
   "diversity": {
     "max_per_country": 2,
     "max_per_region": 4,
     "long_haul_slots": 2
   },
-
   "learning": {
     "default_error_cut": 0.45,
     "min_cut": 0.35,
-    "max_cut": 0.70,
+    "max_cut": 0.7,
     "step_down": 0.02,
     "step_up": 0.05,
     "confirm_days": 2,
@@ -32,35 +33,206 @@
     "min_history_days": 3,
     "keep_days": 60
   },
-
   "alert": {
-    "daily_cron": "7 0 * * *"
+    "daily_crons": [
+      "7 0 * * *",
+      "37 0 * * *",
+      "17 1 * * *"
+    ]
   },
-
   "lcc": {
     "note": "廉航托運 20kg 單程概估（提前線上加購），實際依航線與時段而異",
     "default_per_leg": 1000,
     "airlines": {
-      "IT": 900, "MM": 1000, "GK": 1000, "3K": 1000, "TR": 1100, "VJ": 800, "VZ": 800,
-      "Z2": 900, "5J": 900, "ZE": 900, "7C": 1000, "LJ": 1000, "TW": 1000, "RS": 1000,
-      "UO": 1000, "AK": 900, "FD": 900, "D7": 1500, "OD": 1000, "SL": 900, "BC": 1000
+      "IT": 900,
+      "MM": 1000,
+      "GK": 1000,
+      "3K": 1000,
+      "TR": 1100,
+      "VJ": 800,
+      "VZ": 800,
+      "Z2": 900,
+      "5J": 900,
+      "ZE": 900,
+      "7C": 1000,
+      "LJ": 1000,
+      "TW": 1000,
+      "RS": 1000,
+      "UO": 1000,
+      "AK": 900,
+      "FD": 900,
+      "D7": 1500,
+      "OD": 1000,
+      "SL": 900,
+      "BC": 1000
     }
   },
-
   "regions": {
-    "日本": {"long_haul": false, "trip_days": [5, 15], "cities": ["TYO", "OSA", "NGO", "FUK", "OKA", "SPK", "SDJ", "KMJ", "HKD", "KOJ", "OKJ", "TAK", "KIJ", "HIJ", "AOJ", "IBR", "FSZ"]},
-    "韓國": {"long_haul": false, "trip_days": [5, 15], "cities": ["SEL", "PUS", "CJU", "TAE"]},
-    "港澳": {"long_haul": false, "trip_days": [5, 15], "cities": ["HKG", "MFM"]},
-    "東南亞": {"long_haul": false, "trip_days": [5, 15], "cities": ["BKK", "CNX", "HKT", "SIN", "KUL", "PEN", "BKI", "SGN", "HAN", "DAD", "CXR", "PQC", "MNL", "CEB", "CRK", "JKT", "SUB", "DPS", "PNH", "RGN"]},
-    "太平洋海島": {"long_haul": false, "trip_days": [4, 10], "cities": ["GUM", "ROR"]},
-    "北美": {"long_haul": true, "trip_days": [10, 30], "cities": ["LAX", "SFO", "SEA", "NYC", "ONT", "DFW", "IAH", "CHI", "PHX", "YVR", "YTO"]},
-    "歐洲": {"long_haul": true, "trip_days": [10, 30], "cities": ["LON", "PAR", "AMS", "VIE", "MUC", "FRA", "PRG", "MIL", "ROM", "IST"]},
-    "中東": {"long_haul": true, "trip_days": [7, 21], "cities": ["DXB"]},
-    "澳紐": {"long_haul": true, "trip_days": [8, 21], "cities": ["SYD", "BNE", "MEL", "AKL"]}
+    "日本": {
+      "long_haul": false,
+      "trip_days": [
+        5,
+        15
+      ],
+      "cities": [
+        "TYO",
+        "OSA",
+        "NGO",
+        "FUK",
+        "OKA",
+        "SPK",
+        "SDJ",
+        "KMJ",
+        "HKD",
+        "KOJ",
+        "OKJ",
+        "TAK",
+        "KIJ",
+        "HIJ",
+        "AOJ",
+        "IBR",
+        "FSZ"
+      ]
+    },
+    "韓國": {
+      "long_haul": false,
+      "trip_days": [
+        5,
+        15
+      ],
+      "cities": [
+        "SEL",
+        "PUS",
+        "CJU",
+        "TAE"
+      ]
+    },
+    "港澳": {
+      "long_haul": false,
+      "trip_days": [
+        5,
+        15
+      ],
+      "cities": [
+        "HKG",
+        "MFM"
+      ]
+    },
+    "東南亞": {
+      "long_haul": false,
+      "trip_days": [
+        5,
+        15
+      ],
+      "cities": [
+        "BKK",
+        "CNX",
+        "HKT",
+        "SIN",
+        "KUL",
+        "PEN",
+        "BKI",
+        "SGN",
+        "HAN",
+        "DAD",
+        "CXR",
+        "PQC",
+        "MNL",
+        "CEB",
+        "CRK",
+        "JKT",
+        "SUB",
+        "DPS",
+        "PNH",
+        "RGN"
+      ]
+    },
+    "太平洋海島": {
+      "long_haul": false,
+      "trip_days": [
+        4,
+        10
+      ],
+      "cities": [
+        "GUM",
+        "ROR"
+      ]
+    },
+    "北美": {
+      "long_haul": true,
+      "trip_days": [
+        10,
+        30
+      ],
+      "cities": [
+        "LAX",
+        "SFO",
+        "SEA",
+        "NYC",
+        "ONT",
+        "DFW",
+        "IAH",
+        "CHI",
+        "PHX",
+        "YVR",
+        "YTO"
+      ]
+    },
+    "歐洲": {
+      "long_haul": true,
+      "trip_days": [
+        10,
+        30
+      ],
+      "cities": [
+        "LON",
+        "PAR",
+        "AMS",
+        "VIE",
+        "MUC",
+        "FRA",
+        "PRG",
+        "MIL",
+        "ROM",
+        "IST"
+      ]
+    },
+    "中東": {
+      "long_haul": true,
+      "trip_days": [
+        7,
+        21
+      ],
+      "cities": [
+        "DXB"
+      ]
+    },
+    "澳紐": {
+      "long_haul": true,
+      "trip_days": [
+        8,
+        21
+      ],
+      "cities": [
+        "SYD",
+        "BNE",
+        "MEL",
+        "AKL"
+      ]
+    }
   },
-
   "error_fare_feeds": [
     "https://www.secretflying.com/feed/"
   ],
-  "feed_keywords": ["Taipei", "Taiwan", "Kaohsiung", "Taichung", "TPE", "KHH", "台北", "台灣", "高雄"]
+  "feed_keywords": [
+    "Taipei",
+    "Taiwan",
+    "Kaohsiung",
+    "Taichung",
+    "TPE",
+    "KHH",
+    "台北",
+    "台灣",
+    "高雄"
+  ]
 }
