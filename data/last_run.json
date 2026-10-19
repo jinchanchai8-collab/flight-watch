@@ -1,10 +1,10 @@
 {
- "at": "2026-10-19T12:00+08:00",
+ "at": "2026-10-19T14:01+08:00",
  "mode": "alert",
  "auto": true,
- "fares": 503,
+ "fares": 501,
  "business_fares": 3,
- "ranked": 19,
+ "ranked": 17,
  "pushed": 0,
  "business_errors": 0,
  "holiday_picks": 0,
