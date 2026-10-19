@@ -1,9 +1,9 @@
 {
- "at": "2026-10-20T04:00+08:00",
+ "at": "2026-10-20T06:00+08:00",
  "mode": "alert",
  "auto": true,
- "fares": 502,
- "business_fares": 1,
+ "fares": 505,
+ "business_fares": 2,
  "ranked": 21,
  "pushed": 0,
  "business_errors": 0,
