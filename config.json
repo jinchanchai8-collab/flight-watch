@@ -251,5 +251,8 @@
     "min_samples": 5,
     "max_show": 3
   },
-  "line_format": "flex"
+  "line_format": "flex",
+  "site": {
+    "update_hour": 12
+  }
 }

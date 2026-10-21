@@ -892,6 +892,73 @@ def send_line(text, flex_messages=None):
         return False
 
 
+# ------------------------------------------------------- 10) 網頁（docs/）
+SITE_DIR = ROOT / "docs"
+SITE_TEMPLATE = ROOT / "site_template.html"
+
+
+def site_due(args, state):
+    """每天中午 12 點那次執行更新網頁；手動加 --site 或 SITE=1 一定更新；網頁還不存在也會先產生。"""
+    if "--site" in args or os.environ.get("SITE", "").strip() == "1":
+        return True
+    if not (SITE_DIR / "index.html").exists():
+        return True
+    return dt.datetime.now(TZ).hour >= CONFIG.get("site", {}).get("update_hour", 12) and state.get("last_site") != TODAY_S
+
+
+def site_item(d):
+    tw, leave, local = holiday_info(d)
+    lcc = lcc_estimate(d)
+    return {
+        "from": name(d["origin"]), "city": name(d["dest"]), "country": country(d["dest"]), "region": d["region"],
+        "price": d["price"], "base": d.get("base"), "drop": round(d.get("drop", 0), 3), "tag": d.get("tag"),
+        "airline": d["airline"], "airline_name": airline_name(d["airline"]), "flight": d["flight"],
+        "depart": d["depart"], "return": d["return"], "days": d.get("days"), "leave": leave,
+        "tw_holidays": tw, "local_holidays": [h["name"] for h in local], "lcc_total": lcc[1] if lcc else None,
+        "low_sample": d.get("low_sample", False), "n": d.get("n"), "link": skyscanner_link(d),
+    }
+
+
+def cheapest_by_route(fares, groups, baseline):
+    """每條航線（出發地→目的地）符合行程條件的最低價，附上平常價方便比較。"""
+    best = {}
+    for f in fares:
+        ok, days = trip_ok(f)
+        if not ok:
+            continue
+        r = route_of(f)
+        if r not in best or f["price"] < best[r]["price"]:
+            best[r] = {**f, "days": days}
+    out = []
+    order = list(CONFIG["regions"])
+    for d in best.values():
+        base, _, _ = baseline_price(f"{route_of(d)}|{d['depart'][:7]}", groups, baseline)
+        d["base"] = int(base) if base else None
+        d["drop"] = 1 - d["price"] / base if base else 0
+        out.append(d)
+    return sorted(out, key=lambda d: (order.index(d["region"]), d["price"]))
+
+
+def build_site(ranked, biz, hpicks, cheapest):
+    data = {
+        "updated": dt.datetime.now(TZ).strftime("%Y/%m/%d %H:%M"),
+        "min_days_ahead": CONFIG["min_days_ahead"],
+        "party": PARTY,
+        "region_order": list(CONFIG["regions"]),
+        "deals": [site_item(d) for d in ranked],
+        "business": [{**site_item(d), "reasons": d["reasons"]} for d in biz],
+        "holidays": [{"name": h["name"], "start": h["start"], "end": h["end"], "picks": [site_item(d) for d in ds]}
+                     for h, ds in hpicks],
+        "cheapest": [site_item(d) for d in cheapest],
+    }
+    blob = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+    page = SITE_TEMPLATE.read_text(encoding="utf-8").replace("/*DATA*/null", blob)
+    SITE_DIR.mkdir(parents=True, exist_ok=True)
+    (SITE_DIR / "index.html").write_text(page, encoding="utf-8")
+    (SITE_DIR / ".nojekyll").write_text("", encoding="utf-8")
+    print(f"網頁已更新：降價 {len(data['deals'])} 筆、各地最低價 {len(data['cheapest'])} 筆")
+
+
 # ----------------------------------------------------------------- main
 def detect_mode(args):
     """
@@ -985,6 +1052,13 @@ def main():
                 seen["H|" + key_of(d)] = TODAY_S
             if keep:
                 hpicks.append((h, keep))
+
+    if fares and site_due(args, state) and (not dry or "--site" in args):
+        build_site(ranked, evaluate_business(biz, groups, biz_groups, baseline),
+                   holiday_picks(fares, groups, baseline), cheapest_by_route(fares, groups, baseline))
+        if not dry:
+            state["last_site"] = TODAY_S
+            save_json(STATE_FILE, state)
 
     alerts, errs = fetch_feed_alerts()
     errors += errs
