@@ -1,4 +1,12 @@
 {
  "routes": {},
- "candidates": []
+ "candidates": [
+  {
+   "trip": "TPE-HAN|2027-02-01|2027-02-13",
+   "price": 11093,
+   "base": 24999,
+   "depart": "2027-02-01",
+   "first": "2026-10-21"
+  }
+ ]
 }
