@@ -1,5 +1,11 @@
 {
- "routes": {},
+ "routes": {
+  "TPE-HAN": {
+   "cut": 0.45,
+   "real": 0,
+   "normal": 0
+  }
+ },
  "candidates": [
   {
    "trip": "TPE-HAN|2027-02-01|2027-02-13",
