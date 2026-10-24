@@ -4,6 +4,11 @@
    "cut": 0.43,
    "real": 1,
    "normal": 0
+  },
+  "TPE-TYO": {
+   "cut": 0.45,
+   "real": 0,
+   "normal": 0
   }
  },
  "candidates": [
