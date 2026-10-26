@@ -6,18 +6,10 @@
    "normal": 0
   },
   "TPE-TYO": {
-   "cut": 0.45,
+   "cut": 0.5,
    "real": 0,
-   "normal": 0
+   "normal": 1
   }
  },
- "candidates": [
-  {
-   "trip": "TPE-TYO|2027-02-19|2027-02-23",
-   "price": 10428,
-   "base": 23269,
-   "depart": "2027-02-19",
-   "first": "2026-10-23"
-  }
- ]
+ "candidates": []
 }
