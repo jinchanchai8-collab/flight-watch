@@ -1,15 +1,15 @@
 {
- "at": "2026-10-28T16:00+08:00",
+ "at": "2026-10-28T18:01+08:00",
  "mode": "alert",
  "auto": true,
- "fares": 497,
+ "fares": 495,
  "business_fares": 3,
  "ranked": 21,
  "pushed": 1,
  "business_errors": 0,
  "holiday_picks": 0,
  "errors": [
-  "RSS www.secretflying.com: not well-formed (invalid token): line 9, column 42"
+  "RSS www.secretflying.com: The read operation timed out"
  ],
  "line_sent": true,
  "line_format": "flex"
