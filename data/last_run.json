@@ -1,11 +1,11 @@
 {
- "at": "2026-10-29T06:00+08:00",
- "mode": "alert",
+ "at": "2026-10-29T08:01+08:00",
+ "mode": "daily",
  "auto": true,
- "fares": 495,
+ "fares": 493,
  "business_fares": 3,
  "ranked": 18,
- "pushed": 1,
+ "pushed": 4,
  "business_errors": 0,
  "holiday_picks": 0,
  "errors": [
