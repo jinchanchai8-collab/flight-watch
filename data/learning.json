@@ -6,24 +6,22 @@
    "normal": 0
   },
   "TPE-TYO": {
-   "cut": 0.55,
+   "cut": 0.6,
    "real": 0,
-   "normal": 2
+   "normal": 3
   },
   "TPE-PQC": {
+   "cut": 0.45,
+   "real": 0,
+   "normal": 0
+  },
+  "TPE-SEL": {
    "cut": 0.45,
    "real": 0,
    "normal": 0
   }
  },
  "candidates": [
-  {
-   "trip": "TPE-TYO|2027-02-19|2027-02-23",
-   "price": 9666,
-   "base": 22504,
-   "depart": "2027-02-19",
-   "first": "2026-10-28"
-  },
   {
    "trip": "TPE-PQC|2026-12-01|2026-12-08",
    "price": 5768,
