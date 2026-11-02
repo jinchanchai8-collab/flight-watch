@@ -21,5 +21,13 @@
    "normal": 1
   }
  },
- "candidates": []
+ "candidates": [
+  {
+   "trip": "TPE-PQC|2026-12-01|2026-12-05",
+   "price": 5284,
+   "base": 11261,
+   "depart": "2026-12-01",
+   "first": "2026-11-03"
+  }
+ ]
 }
