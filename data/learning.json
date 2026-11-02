@@ -16,18 +16,10 @@
    "normal": 1
   },
   "TPE-SEL": {
-   "cut": 0.45,
+   "cut": 0.5,
    "real": 0,
-   "normal": 0
+   "normal": 1
   }
  },
- "candidates": [
-  {
-   "trip": "TPE-SEL|2027-02-24|2027-02-28",
-   "price": 7229,
-   "base": 15164,
-   "depart": "2027-02-24",
-   "first": "2026-10-30"
-  }
- ]
+ "candidates": []
 }
