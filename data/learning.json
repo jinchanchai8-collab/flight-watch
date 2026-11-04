@@ -11,8 +11,8 @@
    "normal": 3
   },
   "TPE-PQC": {
-   "cut": 0.5,
-   "real": 0,
+   "cut": 0.48,
+   "real": 1,
    "normal": 1
   },
   "TPE-SEL": {
@@ -22,13 +22,6 @@
   }
  },
  "candidates": [
-  {
-   "trip": "TPE-PQC|2026-12-01|2026-12-05",
-   "price": 5284,
-   "base": 11261,
-   "depart": "2026-12-01",
-   "first": "2026-11-03"
-  },
   {
    "trip": "TPE-SGN|2027-01-02|2027-01-06",
    "price": 7297,
