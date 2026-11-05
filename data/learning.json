@@ -19,6 +19,16 @@
    "cut": 0.5,
    "real": 0,
    "normal": 1
+  },
+  "TPE-SGN": {
+   "cut": 0.45,
+   "real": 0,
+   "normal": 0
+  },
+  "TPE-MNL": {
+   "cut": 0.45,
+   "real": 0,
+   "normal": 0
   }
  },
  "candidates": [
@@ -35,6 +45,13 @@
    "base": 9278,
    "depart": "2026-12-11",
    "first": "2026-11-04"
+  },
+  {
+   "trip": "TPE-NGO|2027-01-07|2027-01-11",
+   "price": 9747,
+   "base": 18304,
+   "depart": "2027-01-07",
+   "first": "2026-11-05"
   }
  ]
 }
