@@ -29,6 +29,11 @@
    "cut": 0.45,
    "real": 0,
    "normal": 0
+  },
+  "TPE-NGO": {
+   "cut": 0.45,
+   "real": 0,
+   "normal": 0
   }
  },
  "candidates": [
