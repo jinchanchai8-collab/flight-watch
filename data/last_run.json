@@ -1,8 +1,8 @@
 {
- "at": "2026-11-06T06:00+08:00",
+ "at": "2026-11-06T08:00+08:00",
  "mode": "alert",
  "auto": true,
- "fares": 522,
+ "fares": 521,
  "business_fares": 2,
  "ranked": 25,
  "pushed": 1,
