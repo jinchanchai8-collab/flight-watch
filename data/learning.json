@@ -21,36 +21,27 @@
    "normal": 1
   },
   "TPE-SGN": {
-   "cut": 0.45,
+   "cut": 0.5,
    "real": 0,
-   "normal": 0
+   "normal": 1
   },
   "TPE-MNL": {
+   "cut": 0.5,
+   "real": 0,
+   "normal": 1
+  },
+  "TPE-NGO": {
    "cut": 0.45,
    "real": 0,
    "normal": 0
   },
-  "TPE-NGO": {
+  "TPE-DAD": {
    "cut": 0.45,
    "real": 0,
    "normal": 0
   }
  },
  "candidates": [
-  {
-   "trip": "TPE-SGN|2027-01-02|2027-01-06",
-   "price": 7297,
-   "base": 14357,
-   "depart": "2027-01-02",
-   "first": "2026-11-04"
-  },
-  {
-   "trip": "TPE-MNL|2026-12-11|2026-12-15",
-   "price": 4418,
-   "base": 9278,
-   "depart": "2026-12-11",
-   "first": "2026-11-04"
-  },
   {
    "trip": "TPE-NGO|2027-01-07|2027-01-11",
    "price": 9747,
