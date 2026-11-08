@@ -31,9 +31,9 @@
    "normal": 1
   },
   "TPE-NGO": {
-   "cut": 0.45,
+   "cut": 0.5,
    "real": 0,
-   "normal": 0
+   "normal": 1
   },
   "TPE-DAD": {
    "cut": 0.45,
@@ -42,13 +42,6 @@
   }
  },
  "candidates": [
-  {
-   "trip": "TPE-NGO|2027-01-07|2027-01-11",
-   "price": 9747,
-   "base": 18304,
-   "depart": "2027-01-07",
-   "first": "2026-11-05"
-  },
   {
    "trip": "TPE-DAD|2026-11-19|2026-11-26",
    "price": 5307,
