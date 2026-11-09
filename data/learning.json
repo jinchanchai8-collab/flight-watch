@@ -36,19 +36,12 @@
    "normal": 1
   },
   "TPE-DAD": {
-   "cut": 0.45,
+   "cut": 0.5,
    "real": 0,
-   "normal": 0
+   "normal": 1
   }
  },
  "candidates": [
-  {
-   "trip": "TPE-DAD|2026-11-19|2026-11-26",
-   "price": 5307,
-   "base": 9678,
-   "depart": "2026-11-19",
-   "first": "2026-11-06"
-  },
   {
    "trip": "TPE-PQC|2026-12-08|2026-12-17",
    "price": 5438,
