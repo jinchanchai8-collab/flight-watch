@@ -11,9 +11,9 @@
    "normal": 3
   },
   "TPE-PQC": {
-   "cut": 0.48,
+   "cut": 0.53,
    "real": 1,
-   "normal": 1
+   "normal": 2
   },
   "TPE-SEL": {
    "cut": 0.5,
@@ -39,16 +39,14 @@
    "cut": 0.5,
    "real": 0,
    "normal": 1
+  },
+  "KHH-HAN": {
+   "cut": 0.45,
+   "real": 0,
+   "normal": 0
   }
  },
  "candidates": [
-  {
-   "trip": "TPE-PQC|2026-12-08|2026-12-17",
-   "price": 5438,
-   "base": 10642,
-   "depart": "2026-12-08",
-   "first": "2026-11-07"
-  },
   {
    "trip": "KHH-HAN|2027-01-10|2027-01-16",
    "price": 5616,
