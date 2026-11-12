@@ -41,19 +41,12 @@
    "normal": 1
   },
   "KHH-HAN": {
-   "cut": 0.45,
+   "cut": 0.5,
    "real": 0,
-   "normal": 0
+   "normal": 1
   }
  },
  "candidates": [
-  {
-   "trip": "KHH-HAN|2027-01-10|2027-01-16",
-   "price": 5616,
-   "base": 12685,
-   "depart": "2027-01-10",
-   "first": "2026-11-09"
-  },
   {
    "trip": "TPE-SGN|2027-01-07|2027-01-11",
    "price": 5879,
