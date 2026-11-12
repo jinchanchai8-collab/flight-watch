@@ -48,7 +48,7 @@ footer{color:var(--muted);font-size:12px;max-width:1100px;margin:0 auto;padding:
 <main>
   <div class="tabs" id="tabs"></div>
 
-  <h2>📉 今日降價（跟同航線同月份平常價比）</h2>
+  <h2>📉 今日降價（直飛＋一次轉機，跟同航線同月份平常價比）</h2>
   <div class="grid" id="deals"></div>
 
   <section id="bizsec" hidden>
@@ -81,7 +81,7 @@ const md = s => s ? `${+s.slice(5,7)}/${+s.slice(8,10)}` : "";
 const dates = d => md(d.depart) + (d.return ? "–" + md(d.return) : "") + (d.days ? `（${d.days}天）` : "");
 let region = "全部";
 
-$("sub").textContent = `更新時間：${DATA.updated}｜${DATA.min_days_ahead} 天後出發・直飛・台北／高雄出發`;
+$("sub").textContent = `更新時間：${DATA.updated}｜${DATA.min_days_ahead} 天後出發・直飛＋一次轉機・台北／高雄出發`;
 
 function regions() {
   const set = new Set();
@@ -103,13 +103,14 @@ function extras(d) {
 
 function dealCard(d) {
   return `<div class="card">
-    <div class="hd" style="background:${TAG_COLOR[d.tag] || "#455a64"}">${esc(d.tag)}　便宜 ${Math.round(d.drop*100)}%</div>
+    <div class="hd" style="background:${TAG_COLOR[d.tag] || "#455a64"}">${esc(d.tag)}　便宜 ${Math.round(d.drop*100)}%｜${d.stops ? "轉機" : "直飛"}</div>
     <div class="bd">
       <div class="route">${esc(d.from)} → ${esc(d.city)}</div>
-      <div class="meta">${esc(d.country)}｜直飛來回</div>
+      <div class="meta"${d.stops ? ' style="color:#c2185b;font-weight:700"' : ""}>${esc(d.country)}｜${d.stops ? "🔁 轉機 1 次來回" : "直飛來回"}</div>
       <div class="price" style="color:${TAG_COLOR[d.tag] || "inherit"}">${money(d.price)}</div>
       <div class="meta">此航線 ${+d.depart.slice(5,7)} 月平常約 ${money(d.base)}</div>
-      <div class="row">✈️ ${esc(d.airline_name)} ${esc(d.airline)}${esc(d.flight)}</div>
+      <div class="row">✈️ ${esc(d.airline_name)}${d.stops ? "（第一段）" : " " + esc(d.airline) + esc(d.flight)}</div>
+      ${(d.notes || []).map(n => `<div class="row" style="font-size:12px">${esc(n)}</div>`).join("")}
       <div class="row">📅 ${dates(d)}</div>
       ${extras(d)}
     </div>
@@ -157,7 +158,7 @@ function cheapRow(d) {
 function render() {
   $("tabs").innerHTML = regions().map(r => `<button class="${r === region ? "on" : ""}" data-r="${esc(r)}">${esc(r)}</button>`).join("");
   const deals = DATA.deals.filter(pass);
-  $("deals").innerHTML = deals.length ? deals.map(dealCard).join("") : `<div class="empty">這個地區今天沒有明顯低於平常價格的直飛票。</div>`;
+  $("deals").innerHTML = deals.length ? deals.map(dealCard).join("") : `<div class="empty">這個地區今天沒有明顯低於平常價格的票。</div>`;
   const biz = DATA.business.filter(pass);
   $("bizsec").hidden = !biz.length;
   $("biz").innerHTML = biz.map(bizCard).join("");
