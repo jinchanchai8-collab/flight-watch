@@ -24,6 +24,7 @@ import datetime as dt
 import gzip
 import html
 import json
+import math
 import os
 import re
 import statistics
@@ -53,6 +54,7 @@ LCC = CONFIG["lcc"]
 HF = CONFIG.get("holiday_focus", {})
 BIZ = CONFIG.get("business", {"enabled": False})
 PARTY = CONFIG.get("party", {}).get("show_for", 0)
+TR = CONFIG.get("transfer", {"enabled": False})
 LAST_RUN_FILE = DATA_DIR / "last_run.json"     # 每次執行的統計（除錯用，不含金鑰）
 
 CITY = {  # 代碼: (中文名, 國家)
@@ -75,6 +77,39 @@ CITY = {  # 代碼: (中文名, 國家)
     "ROM": ("羅馬", "義大利"), "IST": ("伊斯坦堡", "土耳其"), "DXB": ("杜拜", "阿聯"), "SYD": ("雪梨", "澳洲"),
     "BNE": ("布里斯本", "澳洲"), "MEL": ("墨爾本", "澳洲"), "AKL": ("奧克蘭", "紐西蘭"),
     "TPE": ("台北", "台灣"), "KHH": ("高雄", "台灣"), "RMQ": ("台中", "台灣"),
+    # 以下多半沒有台灣直飛，靠一次轉機
+    "BCN": ("巴塞隆納", "西班牙"), "MAD": ("馬德里", "西班牙"), "ZRH": ("蘇黎世", "瑞士"), "CPH": ("哥本哈根", "丹麥"),
+    "HEL": ("赫爾辛基", "芬蘭"), "ATH": ("雅典", "希臘"), "LIS": ("里斯本", "葡萄牙"), "BUD": ("布達佩斯", "匈牙利"),
+    "BER": ("柏林", "德國"), "BRU": ("布魯塞爾", "比利時"), "STO": ("斯德哥爾摩", "瑞典"), "OSL": ("奧斯陸", "挪威"),
+    "REK": ("雷克雅維克", "冰島"), "DUB": ("都柏林", "愛爾蘭"), "BOS": ("波士頓", "美國"), "WAS": ("華盛頓", "美國"),
+    "LAS": ("拉斯維加斯", "美國"), "HNL": ("夏威夷", "美國"), "DOH": ("杜哈", "卡達"), "AUH": ("阿布達比", "阿聯"),
+    "CAI": ("開羅", "埃及"), "DEL": ("德里", "印度"), "BOM": ("孟買", "印度"), "MLE": ("馬爾地夫", "馬爾地夫"),
+    "CMB": ("可倫坡", "斯里蘭卡"), "KTM": ("加德滿都", "尼泊爾"), "PER": ("伯斯", "澳洲"), "CNS": ("凱恩斯", "澳洲"),
+    "CHC": ("基督城", "紐西蘭"),
+}
+
+COORD = {  # 城市大約經緯度，用來估算直飛要飛多久（判斷轉機多花的時間）
+    "TPE": (25.08, 121.23), "KHH": (22.58, 120.35), "RMQ": (24.26, 120.62),
+    "TYO": (35.6, 140.0), "OSA": (34.43, 135.24), "NGO": (34.86, 136.81), "FUK": (33.59, 130.45), "OKA": (26.2, 127.65),
+    "SPK": (42.78, 141.69), "SDJ": (38.14, 140.92), "KMJ": (32.84, 130.86), "HKD": (41.77, 140.82), "KOJ": (31.8, 130.72),
+    "OKJ": (34.76, 133.86), "TAK": (34.21, 134.02), "KIJ": (37.96, 139.12), "HIJ": (34.44, 132.92), "AOJ": (40.73, 140.69),
+    "IBR": (36.18, 140.42), "FSZ": (34.8, 138.19), "SEL": (37.46, 126.44), "PUS": (35.18, 128.94), "CJU": (33.51, 126.49),
+    "TAE": (35.89, 128.66), "HKG": (22.31, 113.91), "MFM": (22.15, 113.59), "BKK": (13.69, 100.75), "CNX": (18.77, 98.96),
+    "HKT": (8.11, 98.32), "SIN": (1.36, 103.99), "KUL": (2.74, 101.71), "PEN": (5.3, 100.28), "BKI": (5.94, 116.05),
+    "SGN": (10.82, 106.65), "HAN": (21.22, 105.81), "DAD": (16.04, 108.2), "CXR": (12.0, 109.22), "PQC": (10.17, 103.99),
+    "MNL": (14.51, 121.02), "CEB": (10.31, 123.98), "CRK": (15.19, 120.56), "JKT": (-6.13, 106.66), "SUB": (-7.38, 112.79),
+    "DPS": (-8.75, 115.17), "PNH": (11.55, 104.84), "RGN": (16.91, 96.13), "GUM": (13.48, 144.8), "ROR": (7.37, 134.54),
+    "LAX": (33.94, -118.41), "SFO": (37.62, -122.38), "SEA": (47.45, -122.31), "NYC": (40.64, -73.78), "ONT": (34.06, -117.6),
+    "DFW": (32.9, -97.04), "IAH": (29.98, -95.34), "CHI": (41.98, -87.9), "PHX": (33.43, -112.01), "YVR": (49.19, -123.18),
+    "YTO": (43.68, -79.63), "LON": (51.47, -0.45), "PAR": (49.01, 2.55), "AMS": (52.31, 4.76), "VIE": (48.11, 16.57),
+    "MUC": (48.35, 11.79), "FRA": (50.03, 8.57), "PRG": (50.1, 14.26), "MIL": (45.63, 8.72), "ROM": (41.8, 12.25),
+    "IST": (41.26, 28.74), "DXB": (25.25, 55.36), "SYD": (-33.95, 151.18), "BNE": (-27.38, 153.12), "MEL": (-37.67, 144.84),
+    "AKL": (-37.01, 174.79), "BCN": (41.3, 2.08), "MAD": (40.47, -3.56), "ZRH": (47.46, 8.55), "CPH": (55.62, 12.65),
+    "HEL": (60.32, 24.96), "ATH": (37.94, 23.94), "LIS": (38.77, -9.13), "BUD": (47.44, 19.26), "BER": (52.36, 13.5),
+    "BRU": (50.9, 4.48), "STO": (59.65, 17.93), "OSL": (60.19, 11.1), "REK": (63.99, -22.61), "DUB": (53.42, -6.27),
+    "BOS": (42.36, -71.01), "WAS": (38.95, -77.46), "LAS": (36.08, -115.15), "HNL": (21.32, -157.92), "DOH": (25.27, 51.61),
+    "AUH": (24.43, 54.65), "CAI": (30.12, 31.41), "DEL": (28.56, 77.1), "BOM": (19.09, 72.87), "MLE": (4.19, 73.53),
+    "CMB": (7.18, 79.88), "KTM": (27.7, 85.36), "PER": (-31.94, 115.97), "CNS": (-16.88, 145.75), "CHC": (-43.49, 172.53),
 }
 
 AIRLINES = {
@@ -158,13 +193,14 @@ def route_of(f):
 
 
 # ---------------------------------------------------- 1) Travelpayouts API
-def fetch_direct_fares(token):
+def fetch_fares(token, transfer=False):
+    """transfer=False 只留直飛；transfer=True 只留「去程或回程轉機 1 次」的票（不含直飛、不含轉 2 次以上）。"""
     c2r = city_to_region()
     fares, errors = [], []
     for origin in CONFIG["origins"]:
         for month in months_ahead(CONFIG["months_ahead"]):
             params = {
-                "origin": origin, "departure_at": month, "direct": "true", "sorting": "price",
+                "origin": origin, "departure_at": month, "direct": "false" if transfer else "true", "sorting": "price",
                 "currency": CONFIG["currency"], "one_way": "true" if CONFIG["one_way"] else "false",
                 "unique": "false", "limit": 1000, "page": 1,
             }
@@ -180,12 +216,21 @@ def fetch_direct_fares(token):
                 dest = t.get("destination")
                 if dest not in c2r:
                     continue
-                if (t.get("transfers") or 0) != 0 or (t.get("return_transfers") or 0) != 0:
+                tr_to, tr_back = t.get("transfers") or 0, t.get("return_transfers") or 0
+                if transfer:
+                    if max(tr_to, tr_back) != 1:
+                        continue
+                elif tr_to != 0 or tr_back != 0:
                     continue
                 depart = (t.get("departure_at") or "")[:10]
                 if not depart or depart < TODAY_S:
                     continue
+                extra = {}
+                if transfer:
+                    extra = {"stops": 1, "tr_to": tr_to, "tr_back": tr_back,
+                             "dur_to": t.get("duration_to") or 0, "dur_back": t.get("duration_back") or 0}
                 fares.append({
+                    **extra,
                     "origin": t.get("origin") or origin,
                     "origin_airport": t.get("origin_airport") or origin,
                     "dest": dest,
@@ -200,6 +245,41 @@ def fetch_direct_fares(token):
     return fares, errors
 
 
+def direct_minutes(a, b):
+    """估算兩地直飛大約要幾分鐘（大圓距離 ÷ 巡航速度 + 起降）。缺座標回傳 None。"""
+    if a not in COORD or b not in COORD:
+        return None
+    (la1, lo1), (la2, lo2) = COORD[a], COORD[b]
+    p1, p2, dl = math.radians(la1), math.radians(la2), math.radians(lo2 - lo1)
+    h = math.sin((p2 - p1) / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    km = 2 * 6371 * math.asin(math.sqrt(h))
+    factor = TR.get("direct_factor", {}).get(city_to_region().get(b) or city_to_region().get(a), 1)  # 例：歐洲線繞開俄羅斯領空
+    return (km / 840 * 60 + 35) * factor
+
+
+def transfer_ok(f):
+    """
+    轉機時間夠不夠（保守判斷）。資料來源只給「全程幾分鐘」，不給轉機點與轉機時間，
+    所以用「全程 − 估算直飛時間」當作轉機＋繞路多花的時間（實際轉機時間只會比這個數字短）。
+    太短（行李可能掛不上、趕不上）或太長（要過夜）都不收；缺資料一律不收。
+    回傳 (是否可行, 去程多花分鐘, 回程多花分鐘)。
+    """
+    base = direct_minutes(f["origin"], f["dest"])
+    if not base:
+        return False, None, None
+    lo = TR.get("min_extra_min", 180) + TR.get("margin_ratio", 0.12) * base  # 風向、航線誤差的安全邊際
+    hi = TR.get("max_extra_min", 720)
+    out = []
+    for n, dur in ((f.get("tr_to"), f.get("dur_to")), (f.get("tr_back"), f.get("dur_back"))):
+        if not n:
+            out.append(None)
+            continue
+        if not dur or not (lo <= dur - base <= hi):
+            return False, None, None
+        out.append(int(dur - base))
+    return True, out[0], out[1]
+
+
 def skyscanner_link(f):
     def ymd(d):
         return d[2:4] + d[5:7] + d[8:10]
@@ -207,7 +287,8 @@ def skyscanner_link(f):
     if f["return"]:
         path += f"{ymd(f['return'])}/"
     cabin = "&cabinclass=business" if f.get("cabin") == "business" else ""
-    return f"https://www.skyscanner.com.tw/transport/flights/{path}?preferdirects=true{cabin}"
+    direct = "false" if f.get("stops") else "true"
+    return f"https://www.skyscanner.com.tw/transport/flights/{path}?preferdirects={direct}{cabin}"
 
 
 def fetch_business(token):
@@ -308,15 +389,32 @@ def error_cut_for(route, learning):
     return learning["routes"].get(route, {}).get("cut", LEARN["default_error_cut"])
 
 
-def rank_deals(fares, groups, baseline, learning):
-    """每條航線取降幅最大的一筆（只看符合行程條件的票）。"""
+def rank_deals(fares, groups, baseline, learning, transfers=(), t_groups=None):
+    """
+    每條航線取降幅最大的一筆（只看符合行程條件的票）；直飛與轉機各自取一筆。
+    轉機票跟「同航線同月份的轉機票」比；若這條航線有直飛，還必須比直飛平常價便宜一定比例才收。
+    """
     best = {}
-    for f in fares:
+    for f in list(fares) + list(transfers):
         ok, days = trip_ok(f)
         if not ok:
             continue
         key = f"{route_of(f)}|{f['depart'][:7]}"
-        base, n, how = baseline_price(key, groups, baseline)
+        vs_direct = None
+        if f.get("stops"):
+            feasible, ex_to, ex_back = transfer_ok(f)
+            if not feasible:
+                continue
+            f = {**f, "extra_to": ex_to, "extra_back": ex_back}
+            dbase, _, _ = baseline_price(key, groups, baseline)
+            if dbase:
+                vs_direct = 1 - f["price"] / dbase
+                if vs_direct < TR.get("cheaper_than_direct", 0.1):
+                    continue
+                f["direct_base"] = int(dbase)
+            base, n, how = baseline_price("T:" + key, t_groups or {}, baseline)
+        else:
+            base, n, how = baseline_price(key, groups, baseline)
         if not base:
             continue
         drop = 1 - f["price"] / base
@@ -332,9 +430,10 @@ def rank_deals(fares, groups, baseline, learning):
         else:
             tag = "📉比平常便宜"
         d = {**f, "base": int(base), "drop": drop, "n": n, "how": how, "tag": tag,
-             "days": days, "low_sample": low_sample}
-        if route not in best or d["drop"] > best[route]["drop"]:
-            best[route] = d
+             "days": days, "low_sample": low_sample, "vs_direct": vs_direct}
+        bk = (route, bool(f.get("stops")))
+        if bk not in best or d["drop"] > best[bk]["drop"]:
+            best[bk] = d
     return sorted(best.values(), key=lambda d: -d["drop"])
 
 
@@ -564,16 +663,45 @@ def fmt_date(s):
     return f"{int(s[5:7])}/{int(s[8:10])}"
 
 
+def stop_label(d):
+    return "🔁轉機1次" if d.get("stops") else "✈️直飛"
+
+
+def flight_label(d):
+    if d.get("stops"):
+        return f"{airline_name(d['airline'])}（第一段航班）🔁 轉機 1 次"
+    return f"{airline_name(d['airline'])} {d['airline']}{d['flight']} 直飛"
+
+
+def _hrs(m):
+    return f"{m / 60:.1f}".rstrip("0").rstrip(".")
+
+
+def transfer_notes(d):
+    """轉機票的補充說明（哪一段轉機、比直飛多花多久、比直飛便宜多少、提醒）。直飛回傳空清單。"""
+    if not d.get("stops"):
+        return []
+    legs = [f"{lbl}比直飛多約 {_hrs(m)} 小時" for lbl, m in (("去程", d.get("extra_to")), ("回程", d.get("extra_back"))) if m]
+    out = ["⏱ " + "、".join(legs) + "（含轉機等待）"]
+    if d.get("vs_direct") is not None:
+        out.append(f"💰 比直飛平常價（NT${d['direct_base']:,}）便宜 {d['vs_direct']:.0%}")
+    else:
+        out.append("ℹ️ 這條航線沒有直飛資料")
+    out.append("⚠️ 轉機點與實際轉機時間請點連結確認；若是分開的兩張票，行李要自己領出重掛")
+    return out
+
+
 def deal_lines(i, d):
     trip = "單程" if CONFIG["one_way"] else "來回"
     dates = fmt_date(d["depart"]) + (f"–{fmt_date(d['return'])}" if d["return"] else "")
     days = f"（{d['days']}天）" if d.get("days") else ""
     out = [
-        f"{i}. {d['tag']} 便宜 {d['drop']:.0%}",
+        f"{i}. {d['tag']} 便宜 {d['drop']:.0%}｜{stop_label(d)}",
         f"{name(d['origin'])}→{name(d['dest'])}（{country(d['dest'])}）{trip} NT${d['price']:,}",
-        f"此航線{int(d['depart'][5:7])}月一般約 NT${d['base']:,}",
-        f"{airline_name(d['airline'])} {d['airline']}{d['flight']} 直飛｜{dates}{days}",
+        f"此航線{int(d['depart'][5:7])}月{'轉機票' if d.get('stops') else ''}一般約 NT${d['base']:,}",
+        f"{flight_label(d)}｜{dates}{days}",
     ]
+    out += transfer_notes(d)
     if d["low_sample"]:
         out.append(f"⚠️ 樣本少（僅 {d['n']} 筆價格），比較基準可能不準，請多比價")
     lcc = lcc_estimate(d)
@@ -643,14 +771,14 @@ def footer(stats):
 
 def build_daily(deals, alerts, notes, errors, stats, biz=None, hpicks=None):
     lo_asia = CONFIG["regions"]["日本"]["trip_days"]
-    lines = [f"✈️ 台灣出發直飛機票日報 {TODAY.month}/{TODAY.day}",
+    lines = [f"✈️ 台灣出發機票日報（直飛＋一次轉機）{TODAY.month}/{TODAY.day}",
              f"條件：{CONFIG['min_days_ahead']} 天後出發｜亞洲 {lo_asia[0]}–{lo_asia[1]} 天｜長程 10 天以上"]
     if deals:
         lines.append(f"降價幅度前 {len(deals)} 名（每條航線跟自己同月份比，分散國家）")
     elif stats.get("repeat"):
         lines.append(f"今天沒有新的降價票（{stats['repeat']} 筆之前已通知過，不重複推播）。")
     else:
-        lines.append("今天沒有明顯低於平常價格的直飛票。")
+        lines.append("今天沒有明顯低於平常價格的票。")
     for i, d in enumerate(deals, 1):
         lines.append("")
         lines += deal_lines(i, d)
@@ -724,13 +852,20 @@ def deal_bubble(i, d):
     days = f"（{d['days']}天）" if d.get("days") else ""
     body = [
         _t(f"{name(d['origin'])} → {name(d['dest'])}", "lg", "#222222", "bold"),
-        _t(f"{country(d['dest'])}｜直飛{trip}", "xs", "#888888"),
+        _t(f"{country(d['dest'])}｜{'🔁 轉機 1 次' if d.get('stops') else '直飛'}{trip}", "xs",
+           "#C2185B" if d.get("stops") else "#888888", "bold" if d.get("stops") else "regular"),
         _t(f"NT${d['price']:,}", "xxl", TAG_COLOR.get(d["tag"], "#222222"), "bold"),
-        _t(f"此航線{int(d['depart'][5:7])}月一般約 NT${d['base']:,}", "xs", "#999999"),
+        _t(f"此航線{int(d['depart'][5:7])}月{'轉機票' if d.get('stops') else ''}一般約 NT${d['base']:,}", "xs", "#999999"),
         {"type": "separator", "margin": "md"},
-        _t(f"✈️ {airline_name(d['airline'])} {d['airline']}{d['flight']}", "sm", margin="md"),
+        _t(f"✈️ {airline_name(d['airline'])}（第一段）" if d.get("stops")
+           else f"✈️ {airline_name(d['airline'])} {d['airline']}{d['flight']}", "sm", margin="md"),
         _t(f"📅 {dates}{days}"),
     ]
+    notes = transfer_notes(d)
+    if notes:
+        body.append(_t(notes[0], "xs", "#C2185B"))
+        body.append(_t(notes[1], "xs", "#2E7D32" if d.get("vs_direct") is not None else "#888888"))
+        body.append(_t("⚠️ 轉機時間請點連結確認；分開兩張票要自己重掛行李", "xxs", "#F57C00"))
     tw, leave, local = holiday_info(d)
     if tw:
         body.append(_t(f"🇹🇼 含{'、'.join(tw)}，請假 {leave} 天", color="#1565C0", weight="bold"))
@@ -746,8 +881,8 @@ def deal_bubble(i, d):
         body.append(_t(f"🎌 當地{h['name']}：{h['note']}", "xs", "#AD1457"))
     if d["low_sample"]:
         body.append(_t(f"⚠️ 樣本少（{d['n']} 筆），請多比價", "xs", "#F57C00"))
-    return _bubble(f"{i}. {d['tag']}  便宜 {d['drop']:.0%}", TAG_COLOR.get(d["tag"], "#455A64"),
-                   body, [_btn("Skyscanner 查看", skyscanner_link(d))])
+    return _bubble(f"{i}. {d['tag']}  便宜 {d['drop']:.0%}｜{'轉機' if d.get('stops') else '直飛'}",
+                   TAG_COLOR.get(d["tag"], "#455A64"), body, [_btn("Skyscanner 查看", skyscanner_link(d))])
 
 
 def biz_bubble(d):
@@ -791,15 +926,19 @@ def _carousel(alt, bubbles):
 def build_daily_flex(deals, alerts, notes, errors, stats, biz, hpicks):
     msgs = []
     if deals:
-        head = f"✈️ 機票日報 {TODAY.month}/{TODAY.day}｜降價前 {len(deals)} 名，左右滑動看卡片 👉"
+        nt = sum(1 for d in deals if d.get("stops"))
+        head = (f"✈️ 機票日報 {TODAY.month}/{TODAY.day}｜降價前 {len(deals)} 名（直飛 {len(deals) - nt}、轉機 {nt}），"
+                "左右滑動看卡片 👉")
     elif stats.get("repeat"):
         head = f"✈️ 機票日報 {TODAY.month}/{TODAY.day}｜今天沒有新的降價票（{stats['repeat']} 筆之前已通知過）"
     else:
-        head = f"✈️ 機票日報 {TODAY.month}/{TODAY.day}｜今天沒有明顯低於平常價格的直飛票"
+        head = f"✈️ 機票日報 {TODAY.month}/{TODAY.day}｜今天沒有明顯低於平常價格的票"
     msgs.append({"type": "text", "text": head})
     if deals:
         alt = "、".join(f"{name(d['dest'])} NT${d['price']:,}(-{d['drop']:.0%})" for d in deals[:6])
-        msgs.append(_carousel(f"今日降價：{alt}", [deal_bubble(i, d) for i, d in enumerate(deals, 1)]))
+        bubbles = [deal_bubble(i, d) for i, d in enumerate(deals, 1)]
+        for k in range(0, min(len(bubbles), 20), 10):  # LINE 一組卡片最多 12 張，20 筆拆成兩組
+            msgs.append(_carousel(f"今日降價：{alt}", bubbles[k:k + 10]))
     extra = [biz_bubble(d) for d in (biz or [])] + [holiday_bubble(h, ds) for h, ds in (hpicks or [])]
     if extra:
         msgs.append(_carousel("商務艙錯價／連假精選", extra))
@@ -821,7 +960,8 @@ def build_alert_flex(deals, alerts, biz):
     bubbles = [deal_bubble(i, d) for i, d in enumerate(deals, 1)] + [biz_bubble(d) for d in (biz or [])]
     if bubbles:
         alt = "、".join(f"{name(d['dest'])} NT${d['price']:,}" for d in (deals + (biz or []))[:6])
-        msgs.append(_carousel(f"錯價：{alt}", bubbles))
+        for k in range(0, min(len(bubbles), 20), 10):
+            msgs.append(_carousel(f"錯價：{alt}", bubbles[k:k + 10]))
     tail = []
     if alerts:
         tail += ["📰 Secret Flying 錯價情報"] + ["🚨 " + a["title"] + "\n" + a["link"] for a in alerts[:3]] + [""]
@@ -916,6 +1056,7 @@ def site_item(d):
         "depart": d["depart"], "return": d["return"], "days": d.get("days"), "leave": leave,
         "tw_holidays": tw, "local_holidays": [h["name"] for h in local], "lcc_total": lcc[1] if lcc else None,
         "low_sample": d.get("low_sample", False), "n": d.get("n"), "link": skyscanner_link(d),
+        "stops": d.get("stops", 0), "notes": transfer_notes(d) if d.get("tag") else [],
     }
 
 
@@ -998,10 +1139,13 @@ def main():
 
     token = "".join((os.environ.get("TRAVELPAYOUTS_TOKEN") or "").split())
     errors, fares = [], []
-    biz = []
+    biz, transfers = [], []
     if token:
-        fares, errs = fetch_direct_fares(token)
+        fares, errs = fetch_fares(token)
         errors += errs
+        if TR.get("enabled"):
+            transfers, errs = fetch_fares(token, transfer=True)
+            errors += errs
         if BIZ.get("enabled"):
             biz, errs = fetch_business(token)
             errors += errs
@@ -1019,11 +1163,13 @@ def main():
 
     groups = group_today(fares)
     biz_groups = {"J:" + k: v for k, v in group_today(biz).items()}
-    notes = review_candidates(learning, fares) if (fares and mode == "daily") else []
-    ranked = rank_deals(fares, groups, baseline, learning)
+    t_groups = {"T:" + k: v for k, v in group_today(transfers).items()}
+    notes = review_candidates(learning, fares + transfers) if (fares and mode == "daily") else []
+    ranked = rank_deals(fares, groups, baseline, learning, transfers, t_groups)
+    t_feasible = sum(1 for f in transfers if transfer_ok(f)[0])
 
     def key_of(d):
-        return f"{route_of(d)}|{d['depart']}|{d['return']}|{d['price']}"
+        return f"{route_of(d)}|{d['depart']}|{d['return']}|{d['price']}" + ("|T" if d.get("stops") else "")
 
     fresh = [d for d in ranked if key_of(d) not in seen]
     if mode == "alert":
@@ -1072,17 +1218,20 @@ def main():
             seen[k] = TODAY_S
 
     if fares:
-        baseline = update_baseline(baseline, {**groups, **biz_groups}, LEARN["keep_days"])
+        baseline = update_baseline(baseline, {**groups, **biz_groups, **t_groups}, LEARN["keep_days"])
     stats = {
         "days": len({r["d"] for v in baseline.values() for r in v}),
-        "routes": len({k.split("|")[0] for k in baseline if not k.startswith("J:")}),
+        "routes": len({k.split("|")[0] for k in baseline if not k.startswith(("J:", "T:"))}),
         "open": len(learning["candidates"]),
         "repeat": len(ranked) - len(fresh),
     }
     print(f"抓到 {len(fares)} 筆直飛票價、{len(groups)} 組航線月份、{len(ranked)} 筆符合條件且低於平常、推播 {len(top)} 筆")
+    print(f"轉機 1 次 {len(transfers)} 筆、轉機時間可行 {t_feasible} 筆")
     print(f"商務艙 {len(biz)} 筆直飛、錯價 {len(biz_top)} 筆；連假精選 {sum(len(x[1]) for x in hpicks)} 筆")
     run_info = {"at": dt.datetime.now(TZ).isoformat(timespec="minutes"), "mode": mode, "auto": auto,
-                "fares": len(fares), "business_fares": len(biz), "ranked": len(ranked), "pushed": len(top),
+                "fares": len(fares), "transfer_fares": len(transfers), "transfer_feasible": t_feasible,
+                "transfer_pushed": sum(1 for d in top if d.get("stops")),
+                "business_fares": len(biz), "ranked": len(ranked), "pushed": len(top),
                 "business_errors": len(biz_top), "holiday_picks": sum(len(x[1]) for x in hpicks),
                 "errors": [e[:120] for e in errors[:10]]}
     for e in errors:
