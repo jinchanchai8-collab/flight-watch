@@ -21,8 +21,8 @@
    "normal": 1
   },
   "TPE-SGN": {
-   "cut": 0.5,
-   "real": 0,
+   "cut": 0.48,
+   "real": 1,
    "normal": 1
   },
   "TPE-MNL": {
@@ -47,13 +47,6 @@
   }
  },
  "candidates": [
-  {
-   "trip": "TPE-SGN|2027-01-07|2027-01-11",
-   "price": 5879,
-   "base": 14357,
-   "depart": "2027-01-07",
-   "first": "2026-11-11"
-  },
   {
    "trip": "TPE-PUS|2027-01-05|2027-01-09",
    "price": 5042,
