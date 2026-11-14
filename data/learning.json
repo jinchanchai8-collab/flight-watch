@@ -44,6 +44,11 @@
    "cut": 0.5,
    "real": 0,
    "normal": 1
+  },
+  "TPE-PUS": {
+   "cut": 0.45,
+   "real": 0,
+   "normal": 0
   }
  },
  "candidates": [
