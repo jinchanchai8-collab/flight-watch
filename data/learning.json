@@ -46,26 +46,17 @@
    "normal": 1
   },
   "TPE-PUS": {
-   "cut": 0.45,
+   "cut": 0.5,
    "real": 0,
+   "normal": 1
+  },
+  "KHH-OKA": {
+   "cut": 0.43,
+   "real": 1,
    "normal": 0
   }
  },
  "candidates": [
-  {
-   "trip": "TPE-PUS|2027-01-05|2027-01-09",
-   "price": 5042,
-   "base": 10243,
-   "depart": "2027-01-05",
-   "first": "2026-11-13"
-  },
-  {
-   "trip": "KHH-OKA|2027-02-28|2027-03-07",
-   "price": 9394,
-   "base": 30400,
-   "depart": "2027-02-28",
-   "first": "2026-11-15"
-  },
   {
    "trip": "KHH-HAN|2027-01-10|2027-01-16",
    "price": 5606,
