@@ -1,8 +1,8 @@
 {
- "at": "2026-11-17T00:01+08:00",
+ "at": "2026-11-17T02:01+08:00",
  "mode": "alert",
  "auto": true,
- "fares": 533,
+ "fares": 532,
  "transfer_fares": 249,
  "transfer_feasible": 7,
  "transfer_pushed": 0,
@@ -10,8 +10,8 @@
  "transfer_extra_hours": {
   "no_duration": 0,
   "under_0h": 8,
-  "0-1h": 45,
-  "1-2h": 98,
+  "0-1h": 46,
+  "1-2h": 97,
   "2-3h": 74,
   "3-5h": 23,
   "5-8h": 0,
