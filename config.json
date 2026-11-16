@@ -296,7 +296,7 @@
   "transfer": {
     "note": "一次轉機：全程比估算直飛多花的時間要在 min_extra_min（再加直飛時間×margin_ratio 的安全邊際）到 max_extra_min 之間；有直飛的航線還要比直飛平常價便宜 cheaper_than_direct 以上",
     "enabled": true,
-    "min_extra_min": 180,
+    "min_extra_min": 120,
     "margin_ratio": 0.12,
     "max_extra_min": 720,
     "cheaper_than_direct": 0.1,
