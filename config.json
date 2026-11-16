@@ -10,16 +10,16 @@
   "dedupe_days": 5,
   "min_days_ahead": 7,
   "ranking": {
-    "top_n": 10,
+    "top_n": 20,
     "min_drop": 0.15,
     "big_drop": 0.3,
     "min_samples": 5,
     "low_sample_warn": 10
   },
   "diversity": {
-    "max_per_country": 2,
-    "max_per_region": 4,
-    "long_haul_slots": 2
+    "max_per_country": 3,
+    "max_per_region": 6,
+    "long_haul_slots": 4
   },
   "learning": {
     "default_error_cut": 0.45,
@@ -146,6 +146,20 @@
         "RGN"
       ]
     },
+    "南亞印度洋": {
+      "long_haul": false,
+      "trip_days": [
+        6,
+        15
+      ],
+      "cities": [
+        "DEL",
+        "BOM",
+        "MLE",
+        "CMB",
+        "KTM"
+      ]
+    },
     "太平洋海島": {
       "long_haul": false,
       "trip_days": [
@@ -174,7 +188,11 @@
         "CHI",
         "PHX",
         "YVR",
-        "YTO"
+        "YTO",
+        "BOS",
+        "WAS",
+        "LAS",
+        "HNL"
       ]
     },
     "歐洲": {
@@ -193,7 +211,21 @@
         "PRG",
         "MIL",
         "ROM",
-        "IST"
+        "IST",
+        "BCN",
+        "MAD",
+        "ZRH",
+        "CPH",
+        "HEL",
+        "ATH",
+        "LIS",
+        "BUD",
+        "BER",
+        "BRU",
+        "STO",
+        "OSL",
+        "REK",
+        "DUB"
       ]
     },
     "中東": {
@@ -203,7 +235,10 @@
         21
       ],
       "cities": [
-        "DXB"
+        "DXB",
+        "DOH",
+        "AUH",
+        "CAI"
       ]
     },
     "澳紐": {
@@ -216,7 +251,10 @@
         "SYD",
         "BNE",
         "MEL",
-        "AKL"
+        "AKL",
+        "PER",
+        "CNS",
+        "CHC"
       ]
     }
   },
@@ -254,5 +292,16 @@
   "line_format": "flex",
   "site": {
     "update_hour": 12
+  },
+  "transfer": {
+    "note": "一次轉機：全程比估算直飛多花的時間要在 min_extra_min（再加直飛時間×margin_ratio 的安全邊際）到 max_extra_min 之間；有直飛的航線還要比直飛平常價便宜 cheaper_than_direct 以上",
+    "enabled": true,
+    "min_extra_min": 180,
+    "margin_ratio": 0.12,
+    "max_extra_min": 720,
+    "cheaper_than_direct": 0.1,
+    "direct_factor": {
+      "歐洲": 1.18
+    }
   }
 }
