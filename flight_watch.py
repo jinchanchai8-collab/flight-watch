@@ -1167,6 +1167,16 @@ def main():
     notes = review_candidates(learning, fares + transfers) if (fares and mode == "daily") else []
     ranked = rank_deals(fares, groups, baseline, learning, transfers, t_groups)
     t_feasible = sum(1 for f in transfers if transfer_ok(f)[0])
+    t_stats = {"no_duration": 0, "under_0h": 0, "0-1h": 0, "1-2h": 0, "2-3h": 0, "3-5h": 0, "5-8h": 0, "8-12h": 0, "over_12h": 0}
+    for f in transfers:  # 去程「全程 − 估算直飛」的分布，用來調整轉機門檻（除錯用）
+        base = direct_minutes(f["origin"], f["dest"])
+        dur = f.get("dur_to") if f.get("tr_to") else f.get("dur_back")
+        if not base or not dur:
+            t_stats["no_duration"] += 1
+            continue
+        h = (dur - base) / 60
+        t_stats[next((k for lim, k in ((0, "under_0h"), (1, "0-1h"), (2, "1-2h"), (3, "2-3h"), (5, "3-5h"), (8, "5-8h"),
+                                       (12, "8-12h")) if h < lim), "over_12h")] += 1
 
     def key_of(d):
         return f"{route_of(d)}|{d['depart']}|{d['return']}|{d['price']}" + ("|T" if d.get("stops") else "")
@@ -1231,6 +1241,7 @@ def main():
     run_info = {"at": dt.datetime.now(TZ).isoformat(timespec="minutes"), "mode": mode, "auto": auto,
                 "fares": len(fares), "transfer_fares": len(transfers), "transfer_feasible": t_feasible,
                 "transfer_pushed": sum(1 for d in top if d.get("stops")),
+                "transfer_ranked": sum(1 for d in ranked if d.get("stops")), "transfer_extra_hours": t_stats,
                 "business_fares": len(biz), "ranked": len(ranked), "pushed": len(top),
                 "business_errors": len(biz_top), "holiday_picks": sum(len(x[1]) for x in hpicks),
                 "errors": [e[:120] for e in errors[:10]]}
