@@ -1,6 +1,6 @@
 {
  "at": "2026-11-17T08:01+08:00",
- "mode": "alert",
+ "mode": "daily",
  "auto": true,
  "fares": 543,
  "transfer_fares": 251,
@@ -20,9 +20,9 @@
  },
  "business_fares": 3,
  "ranked": 22,
- "pushed": 1,
+ "pushed": 8,
  "business_errors": 0,
- "holiday_picks": 0,
+ "holiday_picks": 3,
  "errors": [
   "RSS www.secretflying.com: not well-formed (invalid token): line 9, column 42"
  ],

@@ -41,8 +41,8 @@
    "normal": 1
   },
   "KHH-HAN": {
-   "cut": 0.5,
-   "real": 0,
+   "cut": 0.48,
+   "real": 1,
    "normal": 1
   },
   "TPE-PUS": {
@@ -54,16 +54,19 @@
    "cut": 0.43,
    "real": 1,
    "normal": 0
+  },
+  "TPE-PEN": {
+   "cut": 0.45,
+   "real": 0,
+   "normal": 0
+  },
+  "KHH-FUK": {
+   "cut": 0.45,
+   "real": 0,
+   "normal": 0
   }
  },
  "candidates": [
-  {
-   "trip": "KHH-HAN|2027-01-10|2027-01-16",
-   "price": 5606,
-   "base": 12415,
-   "depart": "2027-01-10",
-   "first": "2026-11-16"
-  },
   {
    "trip": "TPE-PEN|2027-01-12|2027-01-18",
    "price": 16059,
