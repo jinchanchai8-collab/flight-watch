@@ -56,31 +56,22 @@
    "normal": 0
   },
   "TPE-PEN": {
-   "cut": 0.45,
+   "cut": 0.5,
    "real": 0,
-   "normal": 0
+   "normal": 1
   },
   "KHH-FUK": {
+   "cut": 0.5,
+   "real": 0,
+   "normal": 1
+  },
+  "TPE-SPK": {
    "cut": 0.45,
    "real": 0,
    "normal": 0
   }
  },
  "candidates": [
-  {
-   "trip": "TPE-PEN|2027-01-12|2027-01-18",
-   "price": 16059,
-   "base": 29559,
-   "depart": "2027-01-12",
-   "first": "2026-11-16"
-  },
-  {
-   "trip": "KHH-FUK|2026-12-16|2026-12-23",
-   "price": 7825,
-   "base": 24964,
-   "depart": "2026-12-16",
-   "first": "2026-11-16"
-  },
   {
    "trip": "KHH-FUK|2026-12-15|2026-12-23",
    "price": 7560,
