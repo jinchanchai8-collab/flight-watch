@@ -31,9 +31,9 @@
    "normal": 1
   },
   "TPE-NGO": {
-   "cut": 0.5,
+   "cut": 0.55,
    "real": 0,
-   "normal": 1
+   "normal": 2
   },
   "TPE-DAD": {
    "cut": 0.5,
@@ -61,9 +61,9 @@
    "normal": 1
   },
   "KHH-FUK": {
-   "cut": 0.6,
+   "cut": 0.65,
    "real": 0,
-   "normal": 3
+   "normal": 4
   },
   "TPE-SPK": {
    "cut": 0.43,
@@ -76,9 +76,9 @@
    "normal": 1
   },
   "TPE-TAE": {
-   "cut": 0.45,
+   "cut": 0.5,
    "real": 0,
-   "normal": 0
+   "normal": 1
   },
   "TPE-CJU": {
    "cut": 0.43,
@@ -92,34 +92,6 @@
   }
  },
  "candidates": [
-  {
-   "trip": "TPE-TAE|2026-12-17|2026-12-25",
-   "price": 4909,
-   "base": 10072,
-   "depart": "2026-12-17",
-   "first": "2026-11-20"
-  },
-  {
-   "trip": "TPE-NGO|2027-04-07|2027-04-13",
-   "price": 8897,
-   "base": 18043,
-   "depart": "2027-04-07",
-   "first": "2026-11-20"
-  },
-  {
-   "trip": "KHH-FUK|2026-12-29|2027-01-08",
-   "price": 7296,
-   "base": 24964,
-   "depart": "2026-12-29",
-   "first": "2026-11-20"
-  },
-  {
-   "trip": "TPE-SPK|2027-01-02|2027-01-07",
-   "price": 10458,
-   "base": 19730,
-   "depart": "2027-01-02",
-   "first": "2026-11-20"
-  },
   {
    "trip": "KHH-OSA|2027-02-16|2027-02-23",
    "price": 8298,
