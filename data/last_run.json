@@ -1,29 +1,31 @@
 {
- "at": "2026-11-23T22:01+08:00",
+ "at": "2026-11-24T00:01+08:00",
  "mode": "alert",
  "auto": true,
- "fares": 810,
- "transfer_fares": 323,
+ "fares": 817,
+ "transfer_fares": 326,
  "transfer_feasible": 11,
  "transfer_pushed": 0,
  "transfer_ranked": 0,
  "transfer_extra_hours": {
   "no_duration": 0,
-  "under_0h": 10,
-  "0-1h": 66,
-  "1-2h": 116,
-  "2-3h": 95,
-  "3-5h": 35,
+  "under_0h": 9,
+  "0-1h": 69,
+  "1-2h": 113,
+  "2-3h": 98,
+  "3-5h": 36,
   "5-8h": 0,
   "8-12h": 1,
   "over_12h": 0
  },
  "business_fares": 0,
- "ranked": 35,
- "pushed": 0,
+ "ranked": 34,
+ "pushed": 1,
  "business_errors": 0,
  "holiday_picks": 0,
  "errors": [
   "RSS www.secretflying.com: not well-formed (invalid token): line 9, column 42"
- ]
+ ],
+ "line_sent": true,
+ "line_format": "flex"
 }
