@@ -1,5 +1,5 @@
 {
- "at": "2026-11-24T22:01+08:00",
+ "at": "2026-11-25T00:01+08:00",
  "mode": "alert",
  "auto": true,
  "fares": 812,
@@ -10,8 +10,8 @@
  "transfer_extra_hours": {
   "no_duration": 0,
   "under_0h": 8,
-  "0-1h": 64,
-  "1-2h": 117,
+  "0-1h": 65,
+  "1-2h": 116,
   "2-3h": 100,
   "3-5h": 36,
   "5-8h": 0,
@@ -19,7 +19,7 @@
   "over_12h": 0
  },
  "business_fares": 0,
- "ranked": 34,
+ "ranked": 35,
  "pushed": 0,
  "business_errors": 0,
  "holiday_picks": 0,
