@@ -86,19 +86,12 @@
    "normal": 0
   },
   "KHH-OSA": {
-   "cut": 0.45,
+   "cut": 0.5,
    "real": 0,
-   "normal": 0
+   "normal": 1
   }
  },
  "candidates": [
-  {
-   "trip": "KHH-OSA|2027-02-16|2027-02-23",
-   "price": 8298,
-   "base": 23557,
-   "depart": "2027-02-16",
-   "first": "2026-11-21"
-  },
   {
    "trip": "TPE-CJU|2027-01-12|2027-01-16",
    "price": 4607,
