@@ -1,6 +1,6 @@
 {
  "at": "2026-11-26T08:01+08:00",
- "mode": "alert",
+ "mode": "daily",
  "auto": true,
  "fares": 824,
  "transfer_fares": 321,
@@ -20,7 +20,7 @@
  },
  "business_fares": 1,
  "ranked": 33,
- "pushed": 1,
+ "pushed": 5,
  "business_errors": 0,
  "holiday_picks": 0,
  "errors": [
