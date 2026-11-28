@@ -51,9 +51,9 @@
    "normal": 1
   },
   "KHH-OKA": {
-   "cut": 0.48,
+   "cut": 0.53,
    "real": 1,
-   "normal": 1
+   "normal": 2
   },
   "TPE-PEN": {
    "cut": 0.5,
@@ -71,8 +71,8 @@
    "normal": 0
   },
   "TPE-CNX": {
-   "cut": 0.5,
-   "real": 0,
+   "cut": 0.48,
+   "real": 1,
    "normal": 1
   },
   "TPE-TAE": {
@@ -81,14 +81,14 @@
    "normal": 1
   },
   "TPE-CJU": {
-   "cut": 0.48,
+   "cut": 0.53,
    "real": 1,
-   "normal": 1
+   "normal": 2
   },
   "KHH-OSA": {
-   "cut": 0.5,
+   "cut": 0.55,
    "real": 0,
-   "normal": 1
+   "normal": 2
   },
   "TPE-YVR": {
    "cut": 0.48,
@@ -97,34 +97,6 @@
   }
  },
  "candidates": [
-  {
-   "trip": "TPE-CJU|2027-01-18|2027-01-22",
-   "price": 4476,
-   "base": 7893,
-   "depart": "2027-01-18",
-   "first": "2026-11-25"
-  },
-  {
-   "trip": "KHH-OKA|2027-02-23|2027-02-28",
-   "price": 6051,
-   "base": 30400,
-   "depart": "2027-02-23",
-   "first": "2026-11-25"
-  },
-  {
-   "trip": "KHH-OSA|2027-02-18|2027-02-28",
-   "price": 7408,
-   "base": 23557,
-   "depart": "2027-02-18",
-   "first": "2026-11-25"
-  },
-  {
-   "trip": "TPE-CNX|2027-02-19|2027-02-24",
-   "price": 9967,
-   "base": 24105,
-   "depart": "2027-02-19",
-   "first": "2026-11-27"
-  },
   {
    "trip": "TPE-PQC|2027-01-14|2027-01-19",
    "price": 8471,
