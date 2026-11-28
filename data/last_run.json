@@ -1,5 +1,5 @@
 {
- "at": "2026-11-28T20:02+08:00",
+ "at": "2026-11-28T22:01+08:00",
  "mode": "alert",
  "auto": true,
  "fares": 542,
@@ -9,9 +9,9 @@
  "transfer_ranked": 0,
  "transfer_extra_hours": {
   "no_duration": 0,
-  "under_0h": 6,
+  "under_0h": 7,
   "0-1h": 64,
-  "1-2h": 97,
+  "1-2h": 96,
   "2-3h": 52,
   "3-5h": 22,
   "5-8h": 0,
@@ -19,11 +19,11 @@
   "over_12h": 0
  },
  "business_fares": 1,
- "ranked": 26,
+ "ranked": 25,
  "pushed": 0,
  "business_errors": 0,
  "holiday_picks": 0,
  "errors": [
-  "RSS www.secretflying.com: The read operation timed out"
+  "RSS www.secretflying.com: not well-formed (invalid token): line 9, column 42"
  ]
 }
